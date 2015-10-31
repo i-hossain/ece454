@@ -60,210 +60,10 @@ void naive_rotate(int dim, pixel *src, pixel *dst)
  * rotate - Your current working version of rotate
  * IMPORTANT: This is the version you will be graded on
  */
-
- /* 
- * total unroll tiling attempt (3 loops)
- * 
- *      "ONE CANNOT KNOW TRUE PEACE, UNLESS THEY KNOW TRUE PAIN. THERE IS NO PEACE WITHOUT PAIN."
- *      ~Nagato
- */
 char rotate_descr[] = "rotate: Current working version";
 void rotate(int dim, pixel *src, pixel *dst) 
 {
-    int M = 16; // for destination
-    int N = 32;
-
-    int i, j, bj;
-    int destMultInit, srcMult, srcMultInit;
-
-    int multiply[] = {
-        0, 0,
-        MULX(2,dim),
-        MULX(3,dim),
-        MULX(4,dim),
-        MULX(5,dim),
-        MULX(6,dim),
-        MULX(7,dim),
-        MULX(8,dim),
-        MULX(9,dim),
-        MULX(10,dim),
-        MULX(11,dim),
-        MULX(12,dim),
-        MULX(13,dim),
-        MULX(14,dim),
-        MULX(15,dim)
-    };
-
-    for (i = 0; i < dim; i += M)
-    {
-        srcMultInit = i * dim;
-
-        for (j = 0; j < dim; j += N)
-        {
-            for (bj = j; bj < j + N - 7; bj += 8)
-            {
-                destMultInit = (dim-1-bj) * dim + i;
-                srcMult = srcMultInit + bj;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-
-                destMultInit -= dim;
-                srcMult++;
-
-                dst[destMultInit] = src[srcMult];
-                dst[destMultInit + 1] = src[srcMult + dim];
-                dst[destMultInit + 2] = src[srcMult + multiply[2]];
-                dst[destMultInit + 3] = src[srcMult + multiply[3]];
-                dst[destMultInit + 4] = src[srcMult + multiply[4]];
-                dst[destMultInit + 5] = src[srcMult + multiply[5]];
-                dst[destMultInit + 6] = src[srcMult + multiply[6]];
-                dst[destMultInit + 7] = src[srcMult + multiply[7]];
-                dst[destMultInit + 8] = src[srcMult + multiply[8]];
-                dst[destMultInit + 9] = src[srcMult + multiply[9]];
-                dst[destMultInit + 10] = src[srcMult + multiply[10]];
-                dst[destMultInit + 11] = src[srcMult + multiply[11]];
-                dst[destMultInit + 12] = src[srcMult + multiply[12]];
-                dst[destMultInit + 13] = src[srcMult + multiply[13]];
-                dst[destMultInit + 14] = src[srcMult + multiply[14]];
-                dst[destMultInit + 15] = src[srcMult + multiply[15]];
-            }
-        }
-    }
+    naive_rotate(dim, src, dst);
 }
 
 
@@ -563,7 +363,200 @@ void attempt_five(int dim, pixel *src, pixel *dst)
 char rotate_six_descr[] = "total unroll";
 void attempt_six(int dim, pixel *src, pixel *dst) 
 {
-    //copied to rotate
+    int M = 16; // for destination
+    int N = 32;
+
+    int i, j, bj;
+    int destMultInit, srcMult, srcMultInit;
+
+    int multiply[] = {
+        0, 0,
+        MULX(2,dim),
+        MULX(3,dim),
+        MULX(4,dim),
+        MULX(5,dim),
+        MULX(6,dim),
+        MULX(7,dim),
+        MULX(8,dim),
+        MULX(9,dim),
+        MULX(10,dim),
+        MULX(11,dim),
+        MULX(12,dim),
+        MULX(13,dim),
+        MULX(14,dim),
+        MULX(15,dim)
+    };
+
+    for (i = 0; i < dim; i += M)
+    {
+        srcMultInit = i * dim;
+
+        for (j = 0; j < dim; j += N)
+        {
+            for (bj = j; bj < j + N - 7; bj += 8)
+            {
+                destMultInit = (dim-1-bj) * dim + i;
+                srcMult = srcMultInit + bj;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+
+                destMultInit -= dim;
+                srcMult++;
+
+                dst[destMultInit] = src[srcMult];
+                dst[destMultInit + 1] = src[srcMult + dim];
+                dst[destMultInit + 2] = src[srcMult + multiply[2]];
+                dst[destMultInit + 3] = src[srcMult + multiply[3]];
+                dst[destMultInit + 4] = src[srcMult + multiply[4]];
+                dst[destMultInit + 5] = src[srcMult + multiply[5]];
+                dst[destMultInit + 6] = src[srcMult + multiply[6]];
+                dst[destMultInit + 7] = src[srcMult + multiply[7]];
+                dst[destMultInit + 8] = src[srcMult + multiply[8]];
+                dst[destMultInit + 9] = src[srcMult + multiply[9]];
+                dst[destMultInit + 10] = src[srcMult + multiply[10]];
+                dst[destMultInit + 11] = src[srcMult + multiply[11]];
+                dst[destMultInit + 12] = src[srcMult + multiply[12]];
+                dst[destMultInit + 13] = src[srcMult + multiply[13]];
+                dst[destMultInit + 14] = src[srcMult + multiply[14]];
+                dst[destMultInit + 15] = src[srcMult + multiply[15]];
+            }
+        }
+    }
 }
 
 
@@ -578,13 +571,13 @@ void attempt_six(int dim, pixel *src, pixel *dst)
 void register_rotate_functions() 
 {
     add_rotate_function(&naive_rotate, naive_rotate_descr);   
-    add_rotate_function(&rotate, rotate_descr);   
+    //add_rotate_function(&rotate, rotate_descr);   
 
     //add_rotate_function(&attempt_two, rotate_two_descr);   
     //add_rotate_function(&attempt_three, rotate_three_descr);   
     //add_rotate_function(&attempt_four, rotate_four_descr);   
     //add_rotate_function(&attempt_five, rotate_five_descr);   
-    //add_rotate_function(&attempt_six, rotate_six_descr);   
+    add_rotate_function(&attempt_six, rotate_six_descr);   
     //add_rotate_function(&attempt_seven, rotate_seven_descr);   
     //add_rotate_function(&attempt_eight, rotate_eight_descr);   
     //add_rotate_function(&attempt_nine, rotate_nine_descr);   

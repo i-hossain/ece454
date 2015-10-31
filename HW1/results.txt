@@ -1,0 +1,136 @@
+g
+1.772
+747176
+
+---------
+Average Compilation Time: 
+1.752
+Average Performance Time: 
+2.786
+---------
+
+
+gprof
+1.734
+751168
+
+---------
+Average Compilation Time: 
+1.804
+Average Performance Time: 
+3.468
+---------
+
+
+gcov
+2.074
+1012200 (l)
+
+---------
+Average Compilation Time: 
+2.06
+Average Performance Time: 
+2.934
+---------
+
+
+O2
+4.47
+333952
+
+---------
+Average Compilation Time: 
+4.452
+Average Performance Time: 
+1.26
+---------
+
+
+O3
+5.382
+379648
+
+---------
+Average Compilation Time: 
+5.402
+Average Performance Time: 
+1.17
+---------
+
+
+Os
+3.904
+281528 (s)
+
+---------
+Average Compilation Time: 
+3.906
+Average Performance Time: 
+1.382
+---------
+
+
+----------------------------------------
+parallel make
+
+j1
+6.67
+
+j2
+4.954
+
+j4
+2.676
+
+j8
+1.802
+
+-----------------------------------------
+
+ %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 16.24      0.51     0.51   848146     0.00     0.00  comp_delta_td_cost
+ 15.76      1.01     0.50 12629702     0.00     0.00  get_non_updateable_bb
+ 14.49      1.46     0.46 25584958     0.00     0.00  comp_td_point_to_point_delay
+  9.55      1.76     0.30   848146     0.00     0.00  find_affected_nets
+  9.24      2.05     0.29   869998     0.00     0.00  try_swap
+
+  -----------------------------------------
+
+Q2)
+
+Q3)
+
+Q4)
+
+Q5) gprof is faster. question might be related to Q10.
+
+Q6) (see table above)
+
+Q7) because buillding certain files depends on previous files and can't achive perfect speedup ?
+
+Q8) (see table above)
+
+Q9) Os is smallest because the program is being optimized for size. (put info about what Os does)
+
+Q10) gcov is largest because (put info about what we got from the manpage)
+
+Q11) gprof does not include much of the profiling detail that is profiled in gcov
+
+Q12) (see table above)
+
+Q13) gprof is slowest because of frequent interruptions
+
+Q14) obviously O3 is fastest
+
+Q15) gprof is slower because of frequent interruptions
+
+Q16)
+
+Q17)
+
+Q18)
+
+Q19)
+
+Q20)

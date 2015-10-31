@@ -24,11 +24,11 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "",
+    "Mystery, Inc.",
     /* First member's full name */
-    "",
+    "Rushab Ramesh Kumar",
     /* First member's email address */
-    "",
+    "rushab.kumar@mail.utoronto.ca",
     /* Second member's full name (leave blank if none) */
     "",
     /* Second member's email address (leave blank if none) */
@@ -71,18 +71,18 @@ void* heap_listp = NULL;
  * Initialize the heap, including "allocation" of the
  * prologue and epilogue
  **********************************************************/
- int mm_init(void)
- {
-   if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
-         return -1;
-     PUT(heap_listp, 0);                         // alignment padding
-     PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1));   // prologue header
-     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
-     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
-     heap_listp += DSIZE;
+int mm_init(void)
+{
+    if ((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
+        return -1;
+    PUT(heap_listp, 0);                         // alignment padding
+    PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1));   // prologue header
+    PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
+    PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
+    heap_listp += DSIZE;
 
-     return 0;
- }
+    return 0;
+}
 
 /**********************************************************
  * coalesce
@@ -189,6 +189,8 @@ void place(void* bp, size_t asize)
  **********************************************************/
 void mm_free(void *bp)
 {
+    // "I am become death, destroyer of the blocks."
+
     if(bp == NULL){
       return;
     }

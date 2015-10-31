@@ -5,10 +5,10 @@ X11_INCLUDE = -I/usr/X11R6/include
 SRC_DIR = SRC
 
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
-DEBUG_FLAGS = -g 
+DEBUG_FLAGS = -g -pg
 
 # 454: MODIFY THESE OPT FLAGS FOR GPROF, GCOV
-OPT_FLAGS ?= -O3
+OPT_FLAGS ?= -O3 -pg -fopenmp
 
 #FLAGS = $(WARN_FLAGS) -D EZXML_NOMMAP
 FLAGS = $(OPT_FLAGS) -D EZXML_NOMMAP
