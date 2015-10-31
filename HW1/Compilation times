@@ -1,0 +1,99 @@
+Section 3.3
+
+	-g (g)
+	3.024
+
+	-g -pg (gprof)
+	3.396
+
+	-g -fprofile-arcs -ftest-coverage (gcov)
+	4.032
+
+	-O2
+	5.718
+
+	-O3
+	6.646
+
+	-Os
+	5.066
+
+	
+	-g = 1.0
+	-g -pg = 1.123
+	-g -fprofile-arcs -ftest-coverage = 1.333
+	-O2 = 1.891
+	-O3 = 2.198
+	-Os = 1.675
+
+Q3 - -g produces debugging information for the program and doesn't do any optimization on the code hence its compilation time is the fastest compared to others
+Q4 - O3 sets on the most number of optimization flags compared to others so maximum optimaziation is done to code during compilation
+Q5 - gprof puts code into the program to periodically interrupt execution (every 10ms)
+	 gcov tells what lines were executed
+	 gcov tells the compiler to generate additional information needed by gcov (basically a flow graph of the program) and also includes additional code in the object file for generating extra profiling information
+
+
+
+Section 3.4
+-j 1 = 6.524
+-j 2 = 5.016
+-j 4 = 2.616
+-j 8 = 1.762
+
+Q6 - speedup 
+-j 2 = 1.30
+-j 4 = 2.49
+-7 8 = 3.70
+
+
+-----------------------------
+22nd Sept
+
+
+Q16 
+
+-g
+17.78	comp_td_point_to_point_delay
+17.25	comp_delta_td_cost
+13.20	get_non_updateable_bb
+9.86	find_affected_nets
+9.51	try_swap
+
+-o2
+35.16	try_swap
+20.31	comp_td_point_to_point_delay
+11.33	get_non_updateable_bb
+8.20	get_net_cost
+7.81	get_seg_start
+
+-o3
+65.49	try_swap
+19.91	comp_td_point_to_point_delay
+7.96	label_wire_muxes
+1.77	load_net_slack
+0.88	my_irand
+
+Q17
+The "number one" function for O3 is try_swap
+The percentage of time that -O3 spends in it is 6.89 times more than in -g.
+
+try_swap makes calls to other functions and some of these inner functions make further calls to other functions. The compiler optimzed the code by inlining the immediate function calls. Therefore, the functions under try_swap that did not appear on the call graph of -o3 were inlined within try_swap. Hence, the time spent on try_swap significantly increases (as gprof does not make as many function calls within try_swap as it did with -g). Similarly, the functions called by try_swap's children functions were inlined within the children functions. Hence, the number of calls made on try_swap does not change.
+
+Q18
+
+a) The compiler didn't inline the comp_td_point_to_point_delay function because it is invoked approximately 25424969 times. Therefore, inlining it would result in massive code bloat.
+
+b)Since comp_td_point_to_point_delay had no function calls that could be inlined, no further inlining optimaztion could be performed on it. However, the function that called "comp_td_point_to_point_delay" is "comp_delta_td_cost", which was inlined in try_swap. Hence, the interpretor spends a big percentage of time within comp_td_point_to_point_delay function, casuing it to appear at number two.
+
+Q19
+
+550 lines for -g
+213 lines for -O3
+
+550/213 = 2.58X
+
+Q20
+
+Even though the size was optimized by approximately 2.5 times, the speed boost was only around 1.8 times. This is because load and store cannot be optimzed.
+
+Q21
