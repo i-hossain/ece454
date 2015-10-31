@@ -1,2 +1,5 @@
 *.o
 *.gz
+HW1/vpr
+HW2/driver_cpe
+HW3/assn3-malloc/assn/mdriver
