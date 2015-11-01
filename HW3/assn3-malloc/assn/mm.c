@@ -66,6 +66,43 @@ team_t team = {
 
 void* heap_listp = NULL;
 
+int SEG_SIZES[] = {2, 3, 4, 5, 8, 16, 32};
+
+#define GET_NEXTP(bp) (*((char *)(bp) + WSIZE))
+#define GET_PREVP(bp) (*(char *)(bp))
+
+#define SET_NEXTP(bp, p) (GET_NEXTP(bp) = p) 
+#define SET_PREVP(bp, p) (GET_PREVP(bp) = p)
+
+void insert (void *bp) {
+    char* head = GET_HEAD();
+    if (bp < head) {
+        //insert before head
+        SET_PREVP(head, bp);
+        SET_NEXTP(bp, head);
+        SET_PREVP(bp, NULL);
+        head = bp;
+    }
+    else {
+        // insert at sorted location in list
+        char* current = GET_NEXTP(head);
+
+        if (current == NULL) {
+            // one node
+            SET_NEXTP(head, bp);
+            SET_PREVP(bp, head);
+            SET_NEXTP(bp, NULL);
+        }
+
+        while (GET_NEXT(current != NULL) && bp > GET_NEXT(current))
+            current = GET_NEXTP(current);
+
+        SET_NEXTP(bp, GET_NEXTP(current));
+        SET_PREVP(bp, current);
+        SET_NEXTP(current, bp);
+    }
+}
+
 /**********************************************************
  * mm_init
  * Initialize the heap, including "allocation" of the
