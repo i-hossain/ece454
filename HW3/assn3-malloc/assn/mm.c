@@ -30,9 +30,9 @@ team_t team = {
     /* First member's email address */
     "rushab.kumar@mail.utoronto.ca",
     /* Second member's full name (leave blank if none) */
-    "",
+    "Ismail Hossain",
     /* Second member's email address (leave blank if none) */
-    ""
+    "ridoy.hossain@mail.utoronto.ca"
 };
 
 /*************************************************************************
