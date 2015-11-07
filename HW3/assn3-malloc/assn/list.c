@@ -34,96 +34,86 @@ void* heap_listp = NULL;
 
 int SEG_SIZES[] = {2, 3, 4, 5, 8, 16, 32};
 
-#define GET_NEXTV(bp) ((bp != 0)?(*(int *)(bp + WSIZE)):0)
-#define GET_PREVV(bp) ((bp != 0)?(*(int *)(bp)):0)
+typedef struct double_list
+{
+  struct double_list* prev;
+  struct double_list* next;
+}dlist;
 
-#define GET_NEXTP(bp) ((int *)(bp) + WSIZE)
-#define GET_PREVP(bp) ((int *)(bp))
+uintptr_t* head;
 
-#define SET_NEXTP(bp, p) (*(int *)(bp + WSIZE) = (intptr_t)p) 
-#define SET_PREVP(bp, p) (*(int *)(bp) = (intptr_t)p)
-
-int* head;
-
-void insert (int *new_bp) {
+void insert (uintptr_t *new_bp) {
 
 	printf("IN INsert\n");
-	printf("head: %8x\n", head);
-	printf("%8x\n", GET_NEXTV(head));
-	printf("%8x\n", GET_PREVV(head));
 
-	printf("%8x\n", GET_NEXTP(head));
-	printf("%8x\n", GET_PREVP(head));
+  dlist *headCast = (dlist*)head;
+  dlist *bpCast = (dlist*)new_bp;
     
-  //   if (new_bp < head) {
-  //       //insert before head
-  //   	printf("IN first\n");
+    if (new_bp < head) {
+        //insert before head
+    	printf("IN first\n");
 
-  //       SET_PREVP(head, new_bp);
-  //       SET_NEXTP(new_bp, head);
-  //       SET_PREVP(new_bp, 0);
-  //       head = new_bp;
-  //   }
-  //   else {
-  //       // insert at sorted location in list
-  //       int* current = GET_NEXTP(head);
+      headCast->prev = bpCast;
+      headCast->next = NULL;
+
+      bpCast->prev = NULL;
+      bpCast->next = headCast;
+
+      head = new_bp;
+    }
+    else {
+        // insert at sorted location in list
+        dlist* current = headCast->next;
 
   //       printf("curr: %8x\n", *current);
 
   //       printf("%8x\n", GET_NEXTV(current));
 		// printf("%8x\n", GET_PREVV(current));
 
-  //       if (current == 0) {
-  //           // one node
-  //       	printf("IN one node\n");
+        if (current == NULL) {
+            // one node
+        	  printf("IN one node\n");
 
-  //           SET_NEXTP(head, new_bp);
-  //           SET_PREVP(new_bp, head);
-  //           SET_NEXTP(new_bp, 0);
-  //       }
+            headCast->next = bpCast;
 
-  //       while (GET_NEXTP(current) != 0 && new_bp > GET_NEXTP(current))
-  //           current = GET_NEXTP(current);
+            bpCast->prev = headCast;
+            bpCast->next = NULL;
+            return;
+        }
 
-  //       printf("IN last\n");
+        while (current->next != NULL && bpCast > current->next)
+            current = current->next;
 
-  //       SET_NEXTP(new_bp, GET_NEXTV(current));
-  //       SET_PREVP(new_bp, current);
-  //       SET_NEXTP(current, new_bp);
-  //   }
+        printf("IN last\n");
+
+        bpCast->next = current->next;
+        bpCast->prev = current;
+
+        if (current->next != NULL)
+          current->next->prev = bpCast;
+
+        current->next = bpCast;
+    }
 }
 
 void main() {
-	int * bp = sbrk(sizeof(int *) * 2);
-	printf("bp: %8x\n", bp);
-	SET_NEXTP(bp, 0);
-    SET_PREVP(bp, 0);
+	uintptr_t * bp = sbrk(sizeof(int *) * 2);
 
-	printf("%8x\n", GET_NEXTV(bp));
-	printf("%8x\n", GET_PREVV(bp));
+  dlist *headCast = (dlist*)bp;
+  headCast->prev = NULL;
+  headCast->next = NULL;
 
 	head = bp;
 
-	int * bp2 = sbrk(sizeof(int *) * 2);
-	printf("bp2: %8x\n", bp2);
-	SET_NEXTP(bp2, 0);
-    SET_PREVP(bp2, 0);
+  printf("prev: %d\n", (headCast->prev == NULL)?0:1);
+  printf("next: %d\n", (headCast->next == NULL)?0:1);
 
-	printf("%8x\n", GET_NEXTV(bp2));
-	printf("%8x\n", GET_PREVV(bp2));
+	uintptr_t * bp2 = sbrk(sizeof(int *) * 2);
 
 	insert (bp2);
 
-	printf("%8x\n", GET_NEXTV(bp));
-	printf("%8x\n", GET_PREVV(bp));
+  dlist *bpcast = (dlist*)bp2;
 
-	printf("%8x\n", GET_NEXTV(bp2));
-	printf("%8x\n", GET_PREVV(bp2));
-
-	//uintptr_t * nbp = malloc(sizeof(uintptr_t *) * 2);
-
-	//insert (nbp);
-
-	//free (bp2);
-	//free (bp);
+  printf("prev: %d\n", (bpcast->prev == NULL)?0:((bpcast->prev == headCast)?1:2));
+  printf("next: %d\n", (bpcast->next == NULL)?0:((bpcast->next == headCast)?1:2));
 }
