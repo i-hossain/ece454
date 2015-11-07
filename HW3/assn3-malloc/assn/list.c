@@ -42,58 +42,54 @@ typedef struct double_list
 
 uintptr_t* head;
 
-void insert (uintptr_t *new_bp) {
+void insert (void *new_bp) {
 
-	printf("IN INsert\n");
+	printf("Inserting node\n");
 
-  dlist *headCast = (dlist*)head;
-  dlist *bpCast = (dlist*)new_bp;
+  dlist *new_node = (dlist*)new_bp;
+  new_node->next = NULL;
+  new_node->prev = NULL;
+
+  if (head == NULL) {
+    head = new_bp;
+    return;
+  }
+
+  dlist *head_node = (dlist*)head;
     
-    if (new_bp < head) {
-        //insert before head
-    	printf("IN first\n");
+  if (new_bp < head) {
+    //insert before head
+    printf("insert first\n");
 
-      headCast->prev = bpCast;
-      headCast->next = NULL;
+    head_node->prev = new_node;
+    new_node->next = head_node;
+    head = new_bp;
+    return;
+  }
 
-      bpCast->prev = NULL;
-      bpCast->next = headCast;
+  dlist* current = head_node;
 
-      head = new_bp;
-    }
-    else {
-        // insert at sorted location in list
-        dlist* current = headCast->next;
+  if (current == NULL) {
+    // one node
+	  printf("insert second\n");
 
-  //       printf("curr: %8x\n", *current);
+    head_node->next = new_node;
+    new_node->prev = head_node;
+    return;
+  }
 
-  //       printf("%8x\n", GET_NEXTV(current));
-		// printf("%8x\n", GET_PREVV(current));
+  while (current->next != NULL && new_node > current->next)
+    current = current->next;
 
-        if (current == NULL) {
-            // one node
-        	  printf("IN one node\n");
+  printf("insert mid or last\n");
 
-            headCast->next = bpCast;
+  new_node->next = current->next;
+  new_node->prev = current;
 
-            bpCast->prev = headCast;
-            bpCast->next = NULL;
-            return;
-        }
+  if (current->next != NULL)
+    current->next->prev = new_node;
 
-        while (current->next != NULL && bpCast > current->next)
-            current = current->next;
-
-        printf("IN last\n");
-
-        bpCast->next = current->next;
-        bpCast->prev = current;
-
-        if (current->next != NULL)
-          current->next->prev = bpCast;
-
-        current->next = bpCast;
-    }
+  current->next = new_node;
 }
 
 void main() {
