@@ -32,9 +32,9 @@
 
 void* heap_listp = NULL;
 
-#define NUM_SEG_LIST 8
+#define NUM_SEG_LIST 1
 
-size_t SEG_SIZES[NUM_SEG_LIST] = {1, 2, 3, 4, 5, 8, 16, 32};
+size_t SEG_SIZES[NUM_SEG_LIST] = {1};
 void* sep_list_head[NUM_SEG_LIST];
 
 typedef struct double_list
@@ -104,6 +104,9 @@ void remove_node (int index, void *del_bp)
 
     if (current->next != NULL)
       current->next->prev = current->prev;
+
+    current->prev = NULL;
+    current->next = NULL;
 }
 
 void *coalesce(void *bp)
@@ -116,11 +119,11 @@ void *coalesce(void *bp)
         return bp;
     }
 
-    size_t curr_size = size - 8;
-    size_t prev_size = GET_SIZE(PREV_BLKP(bp))-8;
-    size_t next_size = GET_SIZE(NEXT_BLKP(bp))-8;
+    size_t curr_size = size - DSIZE;
+    size_t prev_size = GET_SIZE(PREV_BLKP(bp)) - DSIZE;
+    size_t next_size = GET_SIZE(NEXT_BLKP(bp)) - DSIZE;
 
-    int current_index = 0, next_index = 0, prev_index = 0, i;
+    int current_index, next_index, prev_index, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
         if (curr_size >= SEG_SIZES[i])
             current_index = i;
@@ -139,7 +142,7 @@ void *coalesce(void *bp)
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
 
-        curr_size = size - 8;
+        curr_size = size - DSIZE;
 
         for(i = 0; i < NUM_SEG_LIST; i++) {
             if (curr_size >= SEG_SIZES[i])
@@ -159,7 +162,7 @@ void *coalesce(void *bp)
         PUT(FTRP(bp), PACK(size, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
 
-        curr_size = size - 8;
+        curr_size = size - DSIZE;
         
         for(i = 0; i < NUM_SEG_LIST; i++) {
             if (curr_size >= SEG_SIZES[i])
@@ -181,7 +184,7 @@ void *coalesce(void *bp)
         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
 
-        curr_size = size - 8;
+        curr_size = size - DSIZE;
         
         for(i = 0; i < NUM_SEG_LIST; i++) {
             if (curr_size >= SEG_SIZES[i])
@@ -197,7 +200,7 @@ void *coalesce(void *bp)
 
 
 void main() {
-	// uintptr_t * bp = sbrk(sizeof(int *) * 2);
+ // uintptr_t * bp = sbrk(sizeof(int *) * 2);
 
  //  dlist *headCast = (dlist*)bp;
  //  headCast->prev = NULL;
