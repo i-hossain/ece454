@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "mm.h"
+#include "memlib.h"
+
 #define WSIZE       sizeof(int *)            /* word size (bytes) */
 #define DSIZE       (2 * WSIZE)            /* doubleword size (bytes) */
 #define CHUNKSIZE   (1<<7)      /* initial heap size (bytes) */
@@ -45,7 +48,7 @@ typedef struct double_list
 
 void insert_node (void *new_bp)
 {
-    size_t size = GET_SIZE(HDRP(bp)) - DSIZE;
+    size_t size = GET_SIZE(HDRP(new_bp)) - DSIZE;
 
     int index, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -88,6 +91,17 @@ void insert_node (void *new_bp)
         new_node->prev = head_node;
         return;
     }
+
+    // dlist* current2 = head_node->next;
+
+    // if (current2->next == NULL) {
+    //     // one node
+    //     printf("insert third\n");
+
+    //     head_node->next->next = new_node;
+    //     new_node->prev = head_node->next;
+    //     return;
+    // }
 
     while (current->next != NULL && new_node > current->next)
         current = current->next;
@@ -143,7 +157,7 @@ void* search_node (size_t req_size)
     return NULL;
 }
 
-void* seek_and_destroy (size_t req_size)
+void seek_and_destroy (size_t req_size)
 {
     void *bp = search_node(req_size);
 
@@ -223,23 +237,48 @@ void *coalesce(void *bp)
 
 
 void main() {
- // uintptr_t * bp = sbrk(sizeof(int *) * 2);
+    char * bp = sbrk(DSIZE*2);
 
- //  dlist *headCast = (dlist*)bp;
- //  headCast->prev = NULL;
- //  headCast->next = NULL;
+    PUT(HDRP(bp), PACK(DSIZE*2, 1));
+    PUT(FTRP(bp), PACK(DSIZE*2, 1));
 
-	// head = bp;
+    //dlist *headCast = (dlist*)bp;
+    //headCast->prev = NULL;
+    //headCast->next = NULL;
 
- //  printf("prev: %d\n", (headCast->prev == NULL)?0:1);
- //  printf("next: %d\n", (headCast->next == NULL)?0:1);
+    //sep_list_head[0] = bp;
 
-	// uintptr_t * bp2 = sbrk(sizeof(int *) * 2);
+    // printf("prev: %d\n", (headCast->prev == NULL)?0:1);
+    // printf("next: %d\n", (headCast->next == NULL)?0:1);
 
-	// insert (bp2);
+    char * bp2 = sbrk(DSIZE*2);
+    char * bp3 = sbrk(DSIZE*2);
 
- //  dlist *bpcast = (dlist*)bp2;
+    PUT(HDRP(bp2), PACK(DSIZE*2, 1));
+    PUT(FTRP(bp2), PACK(DSIZE*2, 1));
 
- //  printf("prev: %d\n", (bpcast->prev == NULL)?0:((bpcast->prev == headCast)?1:2));
- //  printf("next: %d\n", (bpcast->next == NULL)?0:((bpcast->next == headCast)?1:2));
+    PUT(HDRP(bp3), PACK(DSIZE*2, 1));
+    PUT(FTRP(bp3), PACK(DSIZE*2, 1));
+
+    //insert_node (bp);
+    //insert_node (bp2);
+    //insert_node (bp3);
+
+    // dlist *bp2cast = (dlist*)bp2;
+    // dlist *bp3cast = (dlist*)bp3;
+
+    // printf("prev: %d\n", (bp2cast->prev == NULL)?0:1);
+    // printf("next: %d\n", (bp2cast->next == NULL)?0:1);
+
+    // printf("prev: %d\n", (bp3cast->prev == NULL)?0:1);
+    // printf("next: %d\n", (bp3cast->next == NULL)?0:1);
+
+    // remove_node (0,bp);
+    // printf("Remove\n");
+
+    // printf("prev: %d\n", (bp2cast->prev == NULL)?0:1);
+    // printf("next: %d\n", (bp2cast->next == NULL)?0:1);
+
+    // printf("prev: %d\n", (bp3cast->prev == NULL)?0:1);
+    // printf("next: %d\n", (bp3cast->next == NULL)?0:1);
 }
