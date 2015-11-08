@@ -93,6 +93,19 @@ void insert_node (int index, void *new_bp)
     current->next = new_node;
 }
 
+void remove_node (int index, void *del_bp)
+{
+    dlist *current = (dlist*) del_bp;
+
+    if (current->prev != NULL)
+      current->prev->next = current->next;
+    else
+      sep_list_head[index] = current->next;
+
+    if (current->next != NULL)
+      current->next->prev = current->prev;
+}
+
 void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
@@ -181,6 +194,7 @@ void *coalesce(void *bp)
         return (PREV_BLKP(bp));
     }
 }
+
 
 void main() {
 	// uintptr_t * bp = sbrk(sizeof(int *) * 2);
