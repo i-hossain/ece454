@@ -6,7 +6,24 @@
 #include <stdint.h>
 
 #include "mm.h"
-#include "memlib.h"
+
+int mm_init(void) {return 1;}
+void *mm_malloc(size_t size) {return NULL;}
+void mm_free(void *ptr) {return;}
+void *mm_realloc(void *ptr, size_t size) {return NULL;}
+
+team_t team = {
+    /* Team name */
+    "Mystery, Inc.",
+    /* First member's full name */
+    "Rushab Ramesh Kumar",
+    /* First member's email address */
+    "rushab.kumar@mail.utoronto.ca",
+    /* Second member's full name (leave blank if none) */
+    "Ismail Hossain",
+    /* Second member's email address (leave blank if none) */
+    "ridoy.hossain@mail.utoronto.ca"
+};
 
 #define WSIZE       sizeof(int *)            /* word size (bytes) */
 #define DSIZE       (2 * WSIZE)            /* doubleword size (bytes) */
@@ -157,20 +174,32 @@ void* search_node (size_t req_size)
     return NULL;
 }
 
-void seek_and_destroy (size_t req_size)
+void* seek_and_destroy (size_t req_size)
 {
     void *bp = search_node(req_size);
 
-    size_t size_bp = GET_SIZE(HDRP(bp));
+    if (bp != NULL) {
+        size_t size_bp = GET_SIZE(HDRP(bp));
     
-    PUT(HDRP(bp), PACK(req_size, 1));
-    PUT(FTRP(bp), PACK(req_size, 1));
+        PUT(HDRP(bp), PACK(req_size, 1));
+        PUT(FTRP(bp), PACK(req_size, 1));
 
-    if (req_size < size_bp) {
-        PUT(HDRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
-        PUT(FTRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
-        insert_node(NEXT_BLKP(bp));
+        if (req_size < size_bp) {
+            PUT(HDRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
+            PUT(FTRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
+            insert_node(NEXT_BLKP(bp));
+        }
     }
+    // else {
+    //     // extend heap
+    //     if ((bp = extend_heap(req_size/WSIZE)) == NULL)
+    //         return NULL;
+
+    //     PUT(HDRP(bp), PACK(req_size, 1));
+    //     PUT(FTRP(bp), PACK(req_size, 1));
+    // }
+
+    return bp;
 }
 
 void *coalesce(void *bp)
@@ -236,8 +265,8 @@ void *coalesce(void *bp)
 }
 
 
-void main() {
-    char * bp = sbrk(DSIZE*2);
+int main() {
+    char * bp = (char*)mem_sbrk(DSIZE*2);
 
     PUT(HDRP(bp), PACK(DSIZE*2, 1));
     PUT(FTRP(bp), PACK(DSIZE*2, 1));
@@ -251,8 +280,8 @@ void main() {
     // printf("prev: %d\n", (headCast->prev == NULL)?0:1);
     // printf("next: %d\n", (headCast->next == NULL)?0:1);
 
-    char * bp2 = sbrk(DSIZE*2);
-    char * bp3 = sbrk(DSIZE*2);
+    char * bp2 = (char*)mem_sbrk(DSIZE*2);
+    char * bp3 = (char*)mem_sbrk(DSIZE*2);
 
     PUT(HDRP(bp2), PACK(DSIZE*2, 1));
     PUT(FTRP(bp2), PACK(DSIZE*2, 1));
@@ -281,4 +310,6 @@ void main() {
 
     // printf("prev: %d\n", (bp3cast->prev == NULL)?0:1);
     // printf("next: %d\n", (bp3cast->next == NULL)?0:1);
+
+    return 0;
 }
