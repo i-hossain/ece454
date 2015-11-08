@@ -79,10 +79,11 @@ typedef struct double_list
     struct double_list* next;
 }dlist;
 
+void *epilogue_bp;
 
 void print_list(int index)
 {
-    char c;
+    //char c;
     dlist *current = sep_list_head[index];
     while (current != NULL)
     {
@@ -90,9 +91,9 @@ void print_list(int index)
         printf ("P:%p::", current->prev);
         printf ("N:%p::", current->next);
         printf ("F:%ld\n", GET(FTRP((void*)current)));
-        scanf ("%c\n", &c);
         current = current->next;
     }
+    //scanf ("%c\n", &c);
 }
 
 void insert_node (void *new_bp)
@@ -116,14 +117,14 @@ void insert_node (void *new_bp)
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
 
-        mm_check();
+        // mm_check();
 
         return;
     }
 
     dlist *head_node = (dlist*)sep_list_head[index];
       
-    if (size < GET_SIZE(HDRP(sep_list_head[index]))) {
+    if (size <= GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
         printf("insert first\n");
 
@@ -131,7 +132,7 @@ void insert_node (void *new_bp)
         new_node->next = head_node;
         sep_list_head[index] = new_bp;
 
-        mm_check();
+        // mm_check();
 
         return;
     }
@@ -145,7 +146,7 @@ void insert_node (void *new_bp)
         head_node->next = new_node;
         new_node->prev = head_node;
 
-        mm_check();
+        // mm_check();
 
         return;
     }
@@ -163,12 +164,22 @@ void insert_node (void *new_bp)
 
     current->next = new_node;
 
-    mm_check();
+    // mm_check();
 }
 
 void remove_node (int index, void *del_bp)
 {
     dlist *current = (dlist*) del_bp;
+
+    if (current->prev == NULL && current->next == NULL)
+        if (sep_list_head[index] != current)
+            return; 
+
+    printf("Freeing node\n");
+    printf ("H:%ld::", GET(HDRP((void*)current)));
+    printf ("P:%p::", current->prev);
+    printf ("N:%p::", current->next);
+    printf ("F:%ld\n", GET(FTRP((void*)current)));
 
     if (current->prev != NULL)
         current->prev->next = current->next;
@@ -181,7 +192,7 @@ void remove_node (int index, void *del_bp)
     current->prev = NULL;
     current->next = NULL;
 
-    //mm_check();
+    mm_check();
 }
 
 void* search_node (size_t req_size)
@@ -215,6 +226,8 @@ void *coalesce(void *bp)
     size_t size = GET_SIZE(HDRP(bp));
 
     if (prev_alloc && next_alloc) {       /* Case 1 */
+        printf("case 1\n");
+
         return bp;
     }
 
@@ -234,29 +247,36 @@ void *coalesce(void *bp)
 
     remove_node(current_index, bp);
 
+    printf("rm_n\n");
+    mm_check();
+
     if (prev_alloc && !next_alloc) { /* Case 2 */
+        printf("case 2\n");
+
         remove_node(next_index, NEXT_BLKP(bp));
 
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
 
-        insert_node(bp);
         return (bp);
     }
 
     else if (!prev_alloc && next_alloc) { /* Case 3 */
+        printf("case 3\n");
+
         remove_node(prev_index, PREV_BLKP(bp));
 
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
 
-        insert_node(PREV_BLKP(bp));
         return (PREV_BLKP(bp));
     }
 
     else {            /* Case 4 */
+        printf("case 4\n");
+
         remove_node(prev_index, PREV_BLKP(bp));
         remove_node(next_index, NEXT_BLKP(bp));
 
@@ -265,7 +285,6 @@ void *coalesce(void *bp)
         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
 
-        insert_node(PREV_BLKP(bp));
         return (PREV_BLKP(bp));
     }
 }
@@ -283,7 +302,10 @@ int mm_init(void)
     PUT(heap_listp + (1 * WSIZE), PACK(DSIZE, 1));   // prologue header
     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
+
     heap_listp += DSIZE;
+
+    epilogue_bp = heap_listp;
 
     return 0;
 }
@@ -337,6 +359,11 @@ int mm_init(void)
  **********************************************************/
 void *extend_heap(size_t words)
 {
+    if (GET_ALLOC(FTRP(PREV_BLKP(epilogue_bp))) == 0) {
+        words -= (GET_SIZE(FTRP(PREV_BLKP(epilogue_bp))) / WSIZE);
+    }
+
+    printf("Extend heap: %ld\n", words * WSIZE);
     char *bp;
     size_t size;
 
@@ -349,6 +376,12 @@ void *extend_heap(size_t words)
     PUT(HDRP(bp), PACK(size, 0));                // free block header
     PUT(FTRP(bp), PACK(size, 0));                // free block footer
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1));        // new epilogue header
+
+    epilogue_bp = NEXT_BLKP(bp);
+
+    dlist *ext_bp = (dlist*)bp;
+    ext_bp->prev = NULL;
+    ext_bp->next = NULL;
 
     /* Coalesce if the previous block was free */
     return coalesce(bp);
@@ -386,13 +419,13 @@ void place(void* bp, size_t asize)
     PUT(HDRP(bp), PACK(asize, 1));
     PUT(FTRP(bp), PACK(asize, 1));
 
+    printf("placing %ld -> %ld\n", asize, bsize);
+
     if (asize < bsize) {
         PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize - asize, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize - asize, 0));
         insert_node(NEXT_BLKP(bp));
     }
-
-    //mm_check();
 }
 
 /**********************************************************
@@ -402,6 +435,7 @@ void place(void* bp, size_t asize)
 void mm_free(void *bp)
 {
     // "I am become death, destroyer of the blocks."
+    printf("mm_free invoked\n");
 
     if(bp == NULL){
       return;
@@ -409,7 +443,13 @@ void mm_free(void *bp)
     size_t size = GET_SIZE(HDRP(bp));
     PUT(HDRP(bp), PACK(size,0));
     PUT(FTRP(bp), PACK(size,0));
+
+    dlist *ext_bp = (dlist*)bp;
+    ext_bp->prev = NULL;
+    ext_bp->next = NULL;
+
     coalesce(bp);
+    insert_node(bp);
 }
 
 
@@ -423,6 +463,8 @@ void mm_free(void *bp)
  **********************************************************/
 void *mm_malloc(size_t size)
 {
+    // mm_check();
+
     size_t asize; /* adjusted block size */
     size_t extendsize; /* amount to extend heap if no fit */
     char * bp;
@@ -436,6 +478,8 @@ void *mm_malloc(size_t size)
         asize = 2 * DSIZE;
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
+
+    printf("Malloc called: %ld :: %ld\n", size, asize);
 
     /* Search the free list for a fit */
     if ((bp = search_node(asize)) != NULL) {
