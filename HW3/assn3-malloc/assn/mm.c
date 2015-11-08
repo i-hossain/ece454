@@ -94,7 +94,7 @@ void print_list(int index)
 
 void insert_node (void *new_bp)
 {
-    size_t size = GET_SIZE(HDRP(new_bp)) - DSIZE;
+    size_t size = GET_SIZE(HDRP(new_bp));
 
     int index, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -117,7 +117,7 @@ void insert_node (void *new_bp)
 
     dlist *head_node = (dlist*)sep_list_head[index];
       
-    if (new_bp < sep_list_head[index]) {
+    if (size < GET_SIZE(HDRP(sep_list_head[index])) {
         //insert before head
         printf("insert first\n");
 
@@ -138,7 +138,7 @@ void insert_node (void *new_bp)
         return;
     }
 
-    while (current->next != NULL && new_node > current->next)
+    while (current->next != NULL && size > GET_SIZE(HDRP(current->next)))
         current = current->next;
 
     printf("insert mid or last\n");
@@ -202,9 +202,9 @@ void *coalesce(void *bp)
         return bp;
     }
 
-    size_t curr_size = size - DSIZE;
-    size_t prev_size = GET_SIZE(PREV_BLKP(bp)) - DSIZE;
-    size_t next_size = GET_SIZE(NEXT_BLKP(bp)) - DSIZE;
+    size_t curr_size = size;
+    size_t prev_size = GET_SIZE(PREV_BLKP(bp));
+    size_t next_size = GET_SIZE(NEXT_BLKP(bp));
 
     int current_index, next_index, prev_index, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
