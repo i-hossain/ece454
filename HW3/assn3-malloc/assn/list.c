@@ -32,84 +32,174 @@
 
 void* heap_listp = NULL;
 
-int SEG_SIZES[] = {2, 3, 4, 5, 8, 16, 32};
+#define NUM_SEG_LIST 8
+
+size_t SEG_SIZES[NUM_SEG_LIST] = {1, 2, 3, 4, 5, 8, 16, 32};
+void* sep_list_head[NUM_SEG_LIST];
 
 typedef struct double_list
 {
-  struct double_list* prev;
-  struct double_list* next;
+    struct double_list* prev;
+    struct double_list* next;
 }dlist;
 
-uintptr_t* head;
+void insert_node (int index, void *new_bp)
+{
+    printf("Inserting node\n");
 
-void insert (void *new_bp) {
+    dlist *new_node = (dlist*)new_bp;
+    new_node->next = NULL;
+    new_node->prev = NULL;
 
-	printf("Inserting node\n");
+    if (sep_list_head[index] == NULL) {
+        sep_list_head[index] = new_bp;
+        return;
+    }
 
-  dlist *new_node = (dlist*)new_bp;
-  new_node->next = NULL;
-  new_node->prev = NULL;
+    dlist *head_node = (dlist*)sep_list_head[index];
+      
+    if (new_bp < sep_list_head[index]) {
+        //insert before head
+        printf("insert first\n");
 
-  if (head == NULL) {
-    head = new_bp;
-    return;
-  }
+        head_node->prev = new_node;
+        new_node->next = head_node;
+        sep_list_head[index] = new_bp;
+        return;
+    }
 
-  dlist *head_node = (dlist*)head;
-    
-  if (new_bp < head) {
-    //insert before head
-    printf("insert first\n");
+    dlist* current = head_node;
 
-    head_node->prev = new_node;
-    new_node->next = head_node;
-    head = new_bp;
-    return;
-  }
+    if (current->next == NULL) {
+        // one node
+        printf("insert second\n");
 
-  dlist* current = head_node;
+        head_node->next = new_node;
+        new_node->prev = head_node;
+        return;
+    }
 
-  if (current == NULL) {
-    // one node
-	  printf("insert second\n");
+    while (current->next != NULL && new_node > current->next)
+        current = current->next;
 
-    head_node->next = new_node;
-    new_node->prev = head_node;
-    return;
-  }
+    printf("insert mid or last\n");
 
-  while (current->next != NULL && new_node > current->next)
-    current = current->next;
+    new_node->next = current->next;
+    new_node->prev = current;
 
-  printf("insert mid or last\n");
+    if (current->next != NULL)
+        current->next->prev = new_node;
 
-  new_node->next = current->next;
-  new_node->prev = current;
+    current->next = new_node;
+}
 
-  if (current->next != NULL)
-    current->next->prev = new_node;
+void *coalesce(void *bp)
+{
+    size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
+    size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
+    size_t size = GET_SIZE(HDRP(bp));
 
-  current->next = new_node;
+    if (prev_alloc && next_alloc) {       /* Case 1 */
+        return bp;
+    }
+
+    size_t curr_size = size - 8;
+    size_t prev_size = GET_SIZE(PREV_BLKP(bp))-8;
+    size_t next_size = GET_SIZE(NEXT_BLKP(bp))-8;
+
+    int current_index = 0, next_index = 0, prev_index = 0, i;
+    for(i = 0; i < NUM_SEG_LIST; i++) {
+        if (curr_size >= SEG_SIZES[i])
+            current_index = i;
+        if (prev_size >= SEG_SIZES[i])
+            prev_index = i;
+        if (next_size >= SEG_SIZES[i])
+            next_index = i;
+    }
+
+    remove_node(current_index, bp);
+
+    if (prev_alloc && !next_alloc) { /* Case 2 */
+        remove_node(next_index, NEXT_BLKP(bp));
+
+        size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        PUT(HDRP(bp), PACK(size, 0));
+        PUT(FTRP(bp), PACK(size, 0));
+
+        curr_size = size - 8;
+
+        for(i = 0; i < NUM_SEG_LIST; i++) {
+            if (curr_size >= SEG_SIZES[i])
+                current_index = i;
+            else
+                break;
+        }
+
+        insert_node(current_index, bp);
+        return (bp);
+    }
+
+    else if (!prev_alloc && next_alloc) { /* Case 3 */
+        remove_node(prev_index, PREV_BLKP(bp));
+
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        PUT(FTRP(bp), PACK(size, 0));
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+
+        curr_size = size - 8;
+        
+        for(i = 0; i < NUM_SEG_LIST; i++) {
+            if (curr_size >= SEG_SIZES[i])
+                current_index = i;
+            else
+                break;
+        }
+
+        insert_node(current_index, PREV_BLKP(bp));
+        return (PREV_BLKP(bp));
+    }
+
+    else {            /* Case 4 */
+        remove_node(prev_index, PREV_BLKP(bp));
+        remove_node(next_index, NEXT_BLKP(bp));
+
+        size += GET_SIZE(HDRP(PREV_BLKP(bp)))  +
+            GET_SIZE(FTRP(NEXT_BLKP(bp)))  ;
+        PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
+
+        curr_size = size - 8;
+        
+        for(i = 0; i < NUM_SEG_LIST; i++) {
+            if (curr_size >= SEG_SIZES[i])
+                current_index = i;
+            else
+                break;
+        }
+
+        insert_node(current_index, PREV_BLKP(bp));
+        return (PREV_BLKP(bp));
+    }
 }
 
 void main() {
-	uintptr_t * bp = sbrk(sizeof(int *) * 2);
+	// uintptr_t * bp = sbrk(sizeof(int *) * 2);
 
-  dlist *headCast = (dlist*)bp;
-  headCast->prev = NULL;
-  headCast->next = NULL;
+ //  dlist *headCast = (dlist*)bp;
+ //  headCast->prev = NULL;
+ //  headCast->next = NULL;
 
-	head = bp;
+	// head = bp;
 
-  printf("prev: %d\n", (headCast->prev == NULL)?0:1);
-  printf("next: %d\n", (headCast->next == NULL)?0:1);
+ //  printf("prev: %d\n", (headCast->prev == NULL)?0:1);
+ //  printf("next: %d\n", (headCast->next == NULL)?0:1);
 
-	uintptr_t * bp2 = sbrk(sizeof(int *) * 2);
+	// uintptr_t * bp2 = sbrk(sizeof(int *) * 2);
 
-	insert (bp2);
+	// insert (bp2);
 
-  dlist *bpcast = (dlist*)bp2;
+ //  dlist *bpcast = (dlist*)bp2;
 
-  printf("prev: %d\n", (bpcast->prev == NULL)?0:((bpcast->prev == headCast)?1:2));
-  printf("next: %d\n", (bpcast->next == NULL)?0:((bpcast->next == headCast)?1:2));
+ //  printf("prev: %d\n", (bpcast->prev == NULL)?0:((bpcast->prev == headCast)?1:2));
+ //  printf("next: %d\n", (bpcast->next == NULL)?0:((bpcast->next == headCast)?1:2));
 }
