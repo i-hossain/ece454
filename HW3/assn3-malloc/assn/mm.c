@@ -66,6 +66,8 @@ team_t team = {
 
 void* heap_listp = NULL;
 
+int mm_check(void);
+
 #define NUM_SEG_LIST 1
 
 size_t SEG_SIZES[NUM_SEG_LIST] = {1};
@@ -80,16 +82,17 @@ typedef struct double_list
 
 void print_list(int index)
 {
+    char c;
     dlist *current = sep_list_head[index];
     while (current != NULL)
     {
-        printf ("H:%d\n", GET(HDRP((void*)current)));
-        printf ("P:%a\n", current->prev);
-        printf ("N:%a\n", current->next);
-        printf ("F:%d\n", GET(FTRP((void*)current)));
+        printf ("H:%ld::", GET(HDRP((void*)current)));
+        printf ("P:%p::", current->prev);
+        printf ("N:%p::", current->next);
+        printf ("F:%ld\n", GET(FTRP((void*)current)));
+        scanf ("%c\n", &c);
+        current = current->next;
     }
-}
-
 }
 
 void insert_node (void *new_bp)
@@ -104,7 +107,7 @@ void insert_node (void *new_bp)
             break;
     }
 
-    printf("Inserting node\n");
+    printf("Inserting node: %ld\n", size);
 
     dlist *new_node = (dlist*)new_bp;
     new_node->next = NULL;
@@ -112,18 +115,24 @@ void insert_node (void *new_bp)
 
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
+
+        mm_check();
+
         return;
     }
 
     dlist *head_node = (dlist*)sep_list_head[index];
       
-    if (size < GET_SIZE(HDRP(sep_list_head[index])) {
+    if (size < GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
         printf("insert first\n");
 
         head_node->prev = new_node;
         new_node->next = head_node;
         sep_list_head[index] = new_bp;
+
+        mm_check();
+
         return;
     }
 
@@ -135,6 +144,9 @@ void insert_node (void *new_bp)
 
         head_node->next = new_node;
         new_node->prev = head_node;
+
+        mm_check();
+
         return;
     }
 
@@ -150,6 +162,8 @@ void insert_node (void *new_bp)
         current->next->prev = new_node;
 
     current->next = new_node;
+
+    mm_check();
 }
 
 void remove_node (int index, void *del_bp)
@@ -166,6 +180,8 @@ void remove_node (int index, void *del_bp)
 
     current->prev = NULL;
     current->next = NULL;
+
+    //mm_check();
 }
 
 void* search_node (size_t req_size)
@@ -371,10 +387,12 @@ void place(void* bp, size_t asize)
     PUT(FTRP(bp), PACK(asize, 1));
 
     if (asize < bsize) {
-        PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize - asize, 1));
-        PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize - asize, 1));
+        PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize - asize, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize - asize, 0));
         insert_node(NEXT_BLKP(bp));
     }
+
+    //mm_check();
 }
 
 /**********************************************************
@@ -472,5 +490,15 @@ void *mm_realloc(void *ptr, size_t size)
  * Return nonzero if the heap is consistant.
  *********************************************************/
 int mm_check(void){
+
+  int i;
+  for(i = 0; i < NUM_SEG_LIST; i++) {
+        if (sep_list_head[i] != NULL) {
+            print_list(i);
+        }
+        else {
+            printf("sep_list_head[%d] is NULL\n", i);
+        }
+    }
   return 1;
 }
