@@ -77,6 +77,21 @@ typedef struct double_list
     struct double_list* next;
 }dlist;
 
+
+void print_list(int index)
+{
+    dlist *current = sep_list_head[index];
+    while (current != NULL)
+    {
+        printf ("H:%d\n", GET(HDRP((void*)current)));
+        printf ("P:%a\n", current->prev);
+        printf ("N:%a\n", current->next);
+        printf ("F:%d\n", GET(FTRP((void*)current)));
+    }
+}
+
+}
+
 void insert_node (void *new_bp)
 {
     size_t size = GET_SIZE(HDRP(new_bp)) - DSIZE;
@@ -122,17 +137,6 @@ void insert_node (void *new_bp)
         new_node->prev = head_node;
         return;
     }
-
-    // dlist* current2 = head_node->next;
-
-    // if (current2->next == NULL) {
-    //     // one node
-    //     printf("insert third\n");
-
-    //     head_node->next->next = new_node;
-    //     new_node->prev = head_node->next;
-    //     return;
-    // }
 
     while (current->next != NULL && new_node > current->next)
         current = current->next;
