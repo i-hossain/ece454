@@ -188,34 +188,6 @@ void* search_node (size_t req_size)
     return NULL;
 }
 
-void* seek_and_destroy (size_t req_size)
-{
-    void *bp = search_node(req_size);
-
-    if (bp != NULL) {
-        size_t size_bp = GET_SIZE(HDRP(bp));
-    
-        PUT(HDRP(bp), PACK(req_size, 1));
-        PUT(FTRP(bp), PACK(req_size, 1));
-
-        if (req_size < size_bp) {
-            PUT(HDRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
-            PUT(FTRP(NEXT_BLKP(bp)), PACK(size_bp - req_size, 1));
-            insert_node(NEXT_BLKP(bp));
-        }
-    }
-    // else {
-    //     // extend heap
-    //     if ((bp = extend_heap(req_size/WSIZE)) == NULL)
-    //         return NULL;
-
-    //     PUT(HDRP(bp), PACK(req_size, 1));
-    //     PUT(FTRP(bp), PACK(req_size, 1));
-    // }
-
-    return bp;
-}
-
 void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
@@ -304,38 +276,38 @@ int mm_init(void)
  * - the previous block is available for coalescing
  * - both neighbours are available for coalescing
  **********************************************************/
-void *coalesce(void *bp)
-{
-    size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
-    size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
-    size_t size = GET_SIZE(HDRP(bp));
+// void *coalesce(void *bp)
+// {
+//     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
+//     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
+//     size_t size = GET_SIZE(HDRP(bp));
 
-    if (prev_alloc && next_alloc) {       /* Case 1 */
-        return bp;
-    }
+//     if (prev_alloc && next_alloc) {       /* Case 1 */
+//         return bp;
+//     }
 
-    else if (prev_alloc && !next_alloc) { /* Case 2 */
-        size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
-        PUT(HDRP(bp), PACK(size, 0));
-        PUT(FTRP(bp), PACK(size, 0));
-        return (bp);
-    }
+//     else if (prev_alloc && !next_alloc) { /* Case 2 */
+//         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+//         PUT(HDRP(bp), PACK(size, 0));
+//         PUT(FTRP(bp), PACK(size, 0));
+//         return (bp);
+//     }
 
-    else if (!prev_alloc && next_alloc) { /* Case 3 */
-        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
-        PUT(FTRP(bp), PACK(size, 0));
-        PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
-        return (PREV_BLKP(bp));
-    }
+//     else if (!prev_alloc && next_alloc) { /* Case 3 */
+//         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+//         PUT(FTRP(bp), PACK(size, 0));
+//         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+//         return (PREV_BLKP(bp));
+//     }
 
-    else {            /* Case 4 */
-        size += GET_SIZE(HDRP(PREV_BLKP(bp)))  +
-            GET_SIZE(FTRP(NEXT_BLKP(bp)))  ;
-        PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
-        PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
-        return (PREV_BLKP(bp));
-    }
-}
+//     else {            /* Case 4 */
+//         size += GET_SIZE(HDRP(PREV_BLKP(bp)))  +
+//             GET_SIZE(FTRP(NEXT_BLKP(bp)))  ;
+//         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
+//         PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
+//         return (PREV_BLKP(bp));
+//     }
+// }
 
 /**********************************************************
  * extend_heap
@@ -388,11 +360,17 @@ void * find_fit(size_t asize)
  **********************************************************/
 void place(void* bp, size_t asize)
 {
-  /* Get the current block size */
-  size_t bsize = GET_SIZE(HDRP(bp));
+    /* Get the current block size */
+    size_t bsize = GET_SIZE(HDRP(bp));
 
-  PUT(HDRP(bp), PACK(bsize, 1));
-  PUT(FTRP(bp), PACK(bsize, 1));
+    PUT(HDRP(bp), PACK(asize, 1));
+    PUT(FTRP(bp), PACK(asize, 1));
+
+    if (asize < bsize) {
+        PUT(HDRP(NEXT_BLKP(bp)), PACK(bsize - asize, 1));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(bsize - asize, 1));
+        insert_node(NEXT_BLKP(bp));
+    }
 }
 
 /**********************************************************
@@ -438,7 +416,7 @@ void *mm_malloc(size_t size)
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
 
     /* Search the free list for a fit */
-    if ((bp = find_fit(asize)) != NULL) {
+    if ((bp = search_node(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
