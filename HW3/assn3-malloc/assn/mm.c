@@ -68,9 +68,10 @@ void* heap_listp = NULL;
 
 int mm_check(int d);
 
-#define NUM_SEG_LIST 10
+#define NUM_SEG_LIST 12
 
-size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 512, 2048, 8192, 16384, 30000, 60000, 100000};
+size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 2048, 8192, 16384, 32768, 65536, 131072, 262144};
+int utilization [NUM_SEG_LIST] = {0};
 void* sep_list_head[NUM_SEG_LIST];
 
 typedef struct double_list
@@ -80,6 +81,8 @@ typedef struct double_list
 }dlist;
 
 void *epilogue_bp;
+
+// #define DEBUG
 
 void print_block(void *bp)
 {
@@ -112,7 +115,7 @@ void print_list(int index)
     //scanf ("%c\n", &c);
 }
 
-void insert_node (void *new_bp)
+int insert_node (void *new_bp)
 {
     size_t size = GET_SIZE(HDRP(new_bp));
 
@@ -123,9 +126,12 @@ void insert_node (void *new_bp)
         else
             break;
     }
+
 #ifdef DEBUG
     printf("Inserting node: %ld\n", size);
 #endif
+
+    utilization[index]++;
 
     dlist *new_node = (dlist*)new_bp;
     new_node->next = NULL;
@@ -136,16 +142,18 @@ void insert_node (void *new_bp)
 
         // mm_check();
 
-        return;
+        return index;
     }
 
     dlist *head_node = (dlist*)sep_list_head[index];
       
-    if (size < GET_SIZE(HDRP(sep_list_head[index]))) {
+    if (size <= GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
+
 #ifdef DEBUG
         printf("insert first\n");
 #endif
+
 
         head_node->prev = new_node;
         new_node->next = head_node;
@@ -153,30 +161,34 @@ void insert_node (void *new_bp)
 
         // mm_check();
 
-        return;
+        return index;
     }
 
     dlist* current = head_node;
 
     if (current->next == NULL) {
         // one node
+
 #ifdef DEBUG
         printf("insert second\n");
 #endif
+
 
         head_node->next = new_node;
         new_node->prev = head_node;
 
         // mm_check();
 
-        return;
+        return index;
     }
 
     while (current->next != NULL && size > GET_SIZE(HDRP(current->next)))
         current = current->next;
+
 #ifdef DEBUG
     printf("insert mid or last\n");
 #endif
+
     new_node->next = current->next;
     new_node->prev = current;
 
@@ -184,6 +196,8 @@ void insert_node (void *new_bp)
         current->next->prev = new_node;
 
     current->next = new_node;
+
+    return index;
 
     // mm_check();
 }
@@ -196,11 +210,11 @@ void remove_node (int index, void *del_bp)
         if (sep_list_head[index] != current)
             return;
 
-    //printf("Removing node\n");
-    //printf ("H:%ld::", GET(HDRP((void*)current)));
-    //printf ("B:%p::", current);
-    //printf ("P:%p::", current->prev);
-    //printf ("N:%p\n", current->next);
+    // printf("Removing node\n");
+    // printf ("H:%ld::", GET(HDRP((void*)current)));
+    // printf ("B:%p::", current);
+    // printf ("P:%p::", current->prev);
+    // printf ("N:%p\n", current->next);
 
     if (current->prev != NULL)
         current->prev->next = current->next;
@@ -249,9 +263,11 @@ void *coalesce(void *bp, size_t extendsize)
     size_t size = GET_SIZE(HDRP(bp));
 
     if (prev_alloc && next_alloc) {       /* Case 1 */
+
 #ifdef DEBUG
         printf("case 1\n");
 #endif
+
         if (extendsize != 0)
             return NULL;
         return bp;
@@ -269,9 +285,11 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     if (prev_alloc && !next_alloc) { /* Case 2 */
+
 #ifdef DEBUG
         printf("case 2: %d\n", next_index);
 #endif
+
         if (extendsize > (size + next_size))
             return NULL;
 
@@ -285,9 +303,11 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     else if (!prev_alloc && next_alloc) { /* Case 3 */
+
 #ifdef DEBUG
         printf("case 3: %d\n", prev_index);
 #endif
+
         //mm_check(2);
 
         if (extendsize > (size + prev_size))
@@ -303,6 +323,7 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     else {            /* Case 4 */
+
 #ifdef DEBUG
         printf("case 4: %d :: %d\n", prev_index, next_index);
 #endif
@@ -347,6 +368,10 @@ int mm_init(void)
         sep_list_head[i] = NULL;
     }
 
+    // for(i = 0; i < NUM_SEG_LIST; i++) {
+    //     printf("UTIL [%d]: %d\n", i, utilization[i]);
+    // }
+
     return 0;
 }
 
@@ -358,38 +383,67 @@ int mm_init(void)
  * - the previous block is available for coalescing
  * - both neighbours are available for coalescing
  **********************************************************/
-// void *coalesce(void *bp)
-// {
-//     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
-//     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
-//     size_t size = GET_SIZE(HDRP(bp));
+void *deferred_coalesce(size_t asize)
+{
+    void *bp = heap_listp;
+    size_t bp_size = GET_SIZE(HDRP(bp)), next_size;
 
-//     if (prev_alloc && next_alloc) {       /* Case 1 */
-//         return bp;
-//     }
+    int next_index, curr_index, i;
+    void *best_fit = NULL;
+    int bf_index = 0;
+    int bf_flag;
 
-//     else if (prev_alloc && !next_alloc) { /* Case 2 */
-//         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
-//         PUT(HDRP(bp), PACK(size, 0));
-//         PUT(FTRP(bp), PACK(size, 0));
-//         return (bp);
-//     }
+    while (bp_size > 0) {
+        if (!GET_ALLOC(HDRP(bp)))
+        {
+            bf_flag = 1;
+            //  && (asize <= GET_SIZE(HDRP(bp)))
+            while (bf_flag && !GET_ALLOC(HDRP(NEXT_BLKP(bp)))) {
+                // gotta coelesce
+                curr_index = 0;
+                next_index = 0;
+                next_size = GET_SIZE(HDRP(NEXT_BLKP(bp)));
 
-//     else if (!prev_alloc && next_alloc) { /* Case 3 */
-//         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
-//         PUT(FTRP(bp), PACK(size, 0));
-//         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
-//         return (PREV_BLKP(bp));
-//     }
+                for(i = 0; i < NUM_SEG_LIST; i++) {
+                    if (next_size >= SEG_SIZES[i])
+                        next_index = i;
+                    if (bp_size >= SEG_SIZES[i])
+                        curr_index = i;
+                }
 
-//     else {            /* Case 4 */
-//         size += GET_SIZE(HDRP(PREV_BLKP(bp)))  +
-//             GET_SIZE(FTRP(NEXT_BLKP(bp)))  ;
-//         PUT(HDRP(PREV_BLKP(bp)), PACK(size,0));
-//         PUT(FTRP(NEXT_BLKP(bp)), PACK(size,0));
-//         return (PREV_BLKP(bp));
-//     }
-// }
+                remove_node(curr_index, bp);
+                remove_node(next_index, NEXT_BLKP(bp));
+
+                bp_size += next_size;
+                PUT(HDRP(bp), PACK(bp_size, 0));
+                PUT(FTRP(bp), PACK(bp_size, 0));
+
+                if (asize <= bp_size) {
+                    if (best_fit == NULL) {
+                        best_fit = bp;
+                        bf_index = insert_node(bp);
+                        bf_flag = 0;
+                    }
+                    else if (bp_size < GET_SIZE(HDRP(best_fit))) {
+                        best_fit = bp;
+                        bf_index = insert_node(bp);
+                        bf_flag = 0;
+                    }
+                    else
+                        insert_node (bp);
+                }
+                else
+                    insert_node (bp);
+            }
+        }
+        bp = NEXT_BLKP(bp);
+        bp_size = GET_SIZE(HDRP(bp));
+    }
+    if (best_fit != NULL)
+        remove_node (bf_index, best_fit);
+
+    return best_fit;
+}
 
 /**********************************************************
  * extend_heap
@@ -404,7 +458,7 @@ void *extend_heap(size_t words)
     //     words -= (GET_SIZE(FTRP(PREV_BLKP(epilogue_bp))) / WSIZE);
     // }
 
-    //printf("Extend heap: %ld\n", words * WSIZE);
+    // printf("Extend heap: %ld\n", words * WSIZE);
     char *bp;
     size_t size;
 
@@ -456,9 +510,11 @@ void place(void* bp, size_t asize)
 {
     /* Get the current block size */
     size_t bsize = GET_SIZE(HDRP(bp));
+
 #ifdef DEBUG
     printf("placing %ld -> %ld\n", asize, bsize);
 #endif
+
     if (bsize - asize >= 4 * WSIZE) {
         // min block size
         PUT(HDRP(bp), PACK(asize, 1));
@@ -481,9 +537,11 @@ void place(void* bp, size_t asize)
 void mm_free(void *bp)
 {
     // "I am become death, destroyer of the blocks."
+
 #ifdef DEBUG
     printf("mm_free invoked: %p\n", bp);
 #endif
+
     //mm_check();
 
     if(bp == NULL){
@@ -492,7 +550,7 @@ void mm_free(void *bp)
 
     // double free?! - check if bp is already free
     if (!GET_ALLOC(HDRP(bp))) {
-        //printf("double free called!!\n");
+        // printf("double free called!!\n");
         return;
     }
 
@@ -539,14 +597,22 @@ void *mm_malloc(size_t size)
         asize = 2 * DSIZE;
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
+
 #ifdef DEBUG
     printf("mm_malloc invoked: %ld :: %ld\n", size, asize);
 #endif
+
     /* Search the free list for a fit */
     if ((bp = search_node(asize)) != NULL) {
         place(bp, asize);
         return bp;
     }
+
+    // Nothing found. coalesce to see if we can get space.
+    // if ((bp = deferred_coalesce(asize)) != NULL) {
+    //     place(bp, asize);
+    //     return bp;
+    // }
 
     /* No fit found. Get more memory and place the block */
     // Check if last block is not allocated
@@ -554,9 +620,11 @@ void *mm_malloc(size_t size)
 
     if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
         size_t lb_size = GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)));
+
 #ifdef DEBUG
         printf("Last block free: %ld\n", lb_size);
 #endif
+
         size -= lb_size;
         if (size <= DSIZE)
             csize = 2 * DSIZE;
@@ -594,17 +662,17 @@ void *mm_realloc(void *ptr, size_t size)
     size_t copySize = GET_SIZE(HDRP(oldptr));
     if (size < copySize) {
         // need to shrink block
-        //copySize = size;
-        place(oldptr, size);
-        printf("AFTER\n");
-        mm_check(3);
-        return oldptr;
+        copySize = size;
+        // place(oldptr, size);
+        // printf("AFTER\n");
+        // mm_check(3);
+        // return oldptr;
     }
-    else {
-        void *cptr = coalesce(oldptr, size);
+    // else {
+        // void *cptr = coalesce(oldptr, size);
 
-        if (cptr == NULL) {
-            // could not coalesce
+        // if (cptr == NULL) {
+        //     // could not coalesce
 
             void *newptr = mm_malloc(size);
             if (newptr == NULL)
@@ -614,16 +682,16 @@ void *mm_realloc(void *ptr, size_t size)
             memcpy(newptr, oldptr, copySize);
             mm_free(oldptr);
             return newptr;
-        }
-        else if (cptr < oldptr) {
-            // prev blk pointer returned
-            // Copy the old data.
-            memcpy(cptr, oldptr, copySize);
-            printf("AFTER\n");
-            mm_check(3);
-        }
-        return cptr;
-    }
+    //     }
+    //     else if (cptr < oldptr) {
+    //         // prev blk pointer returned
+    //         // Copy the old data.
+    //         memcpy(cptr, oldptr, copySize);
+    //         printf("AFTER\n");
+    //         mm_check(3);
+    //     }
+    //     return cptr;
+    // }
 }
 
 /**********************************************************
