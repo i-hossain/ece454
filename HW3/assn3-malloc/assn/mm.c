@@ -85,15 +85,19 @@ void print_block(void *bp)
 {
     dlist *blk = (dlist*)bp;
     if (blk != NULL) {
-        if (GET_ALLOC(HDRP((void*)blk)) == 0)
-            printf("XXXXX::");
-        printf ("H:%ld::", GET(HDRP((void*)blk)));
-        printf ("B:%p::", blk);
-        printf ("P:%p::", blk->prev);
-        printf ("N:%p\n", blk->next);
+        if (GET_ALLOC(HDRP((void*)blk)) == 0){}
+            // printf("XXXXX::");
+        // printf ("H:%ld::", GET(HDRP((void*)blk)));
+        // printf ("B:%p::", blk);
+        // printf ("P:%p::", blk->prev);
+        // printf ("N:%p\n", blk->next);
     }
     else
+    {
+#ifdef DEBUG
         printf("BLOCK IS NULL\n");
+#endif
+    }
 }
 
 void print_list(int index)
@@ -119,8 +123,9 @@ void insert_node (void *new_bp)
         else
             break;
     }
-
-    //printf("Inserting node: %ld\n", size);
+#ifdef DEBUG
+    printf("Inserting node: %ld\n", size);
+#endif
 
     dlist *new_node = (dlist*)new_bp;
     new_node->next = NULL;
@@ -138,7 +143,9 @@ void insert_node (void *new_bp)
       
     if (size < GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
-        //printf("insert first\n");
+#ifdef DEBUG
+        printf("insert first\n");
+#endif
 
         head_node->prev = new_node;
         new_node->next = head_node;
@@ -153,7 +160,9 @@ void insert_node (void *new_bp)
 
     if (current->next == NULL) {
         // one node
-        //printf("insert second\n");
+#ifdef DEBUG
+        printf("insert second\n");
+#endif
 
         head_node->next = new_node;
         new_node->prev = head_node;
@@ -165,9 +174,9 @@ void insert_node (void *new_bp)
 
     while (current->next != NULL && size > GET_SIZE(HDRP(current->next)))
         current = current->next;
-
-    //printf("insert mid or last\n");
-
+#ifdef DEBUG
+    printf("insert mid or last\n");
+#endif
     new_node->next = current->next;
     new_node->prev = current;
 
@@ -240,7 +249,9 @@ void *coalesce(void *bp, size_t extendsize)
     size_t size = GET_SIZE(HDRP(bp));
 
     if (prev_alloc && next_alloc) {       /* Case 1 */
+#ifdef DEBUG
         printf("case 1\n");
+#endif
         if (extendsize != 0)
             return NULL;
         return bp;
@@ -258,8 +269,9 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     if (prev_alloc && !next_alloc) { /* Case 2 */
+#ifdef DEBUG
         printf("case 2: %d\n", next_index);
-
+#endif
         if (extendsize > (size + next_size))
             return NULL;
 
@@ -273,8 +285,9 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     else if (!prev_alloc && next_alloc) { /* Case 3 */
+#ifdef DEBUG
         printf("case 3: %d\n", prev_index);
-
+#endif
         //mm_check(2);
 
         if (extendsize > (size + prev_size))
@@ -290,8 +303,9 @@ void *coalesce(void *bp, size_t extendsize)
     }
 
     else {            /* Case 4 */
+#ifdef DEBUG
         printf("case 4: %d :: %d\n", prev_index, next_index);
-
+#endif
         if (extendsize > (size + prev_size + next_size))
             return NULL;
 
@@ -442,9 +456,9 @@ void place(void* bp, size_t asize)
 {
     /* Get the current block size */
     size_t bsize = GET_SIZE(HDRP(bp));
-
-    //printf("placing %ld -> %ld\n", asize, bsize);
-
+#ifdef DEBUG
+    printf("placing %ld -> %ld\n", asize, bsize);
+#endif
     if (bsize - asize >= 4 * WSIZE) {
         // min block size
         PUT(HDRP(bp), PACK(asize, 1));
@@ -467,8 +481,9 @@ void place(void* bp, size_t asize)
 void mm_free(void *bp)
 {
     // "I am become death, destroyer of the blocks."
-    //printf("mm_free invoked: %p\n", bp);
-
+#ifdef DEBUG
+    printf("mm_free invoked: %p\n", bp);
+#endif
     //mm_check();
 
     if(bp == NULL){
@@ -524,9 +539,9 @@ void *mm_malloc(size_t size)
         asize = 2 * DSIZE;
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
-
-    //printf("mm_malloc invoked: %ld :: %ld\n", size, asize);
-
+#ifdef DEBUG
+    printf("mm_malloc invoked: %ld :: %ld\n", size, asize);
+#endif
     /* Search the free list for a fit */
     if ((bp = search_node(asize)) != NULL) {
         place(bp, asize);
@@ -539,8 +554,9 @@ void *mm_malloc(size_t size)
 
     if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
         size_t lb_size = GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)));
-        //printf("Last block free: %ld\n", lb_size);
-
+#ifdef DEBUG
+        printf("Last block free: %ld\n", lb_size);
+#endif
         size -= lb_size;
         if (size <= DSIZE)
             csize = 2 * DSIZE;
@@ -571,8 +587,8 @@ void *mm_realloc(void *ptr, size_t size)
     if (ptr == NULL)
       return (mm_malloc(size));
 
-    printf("BEFORE\n");
-    mm_check(3);
+    // printf("BEFORE\n");
+    // mm_check(3);
 
     void *oldptr = ptr;
     size_t copySize = GET_SIZE(HDRP(oldptr));
@@ -595,8 +611,8 @@ void *mm_realloc(void *ptr, size_t size)
               return NULL;
 
             // Copy the old data.
-            mm_free(oldptr);
             memcpy(newptr, oldptr, copySize);
+            mm_free(oldptr);
             return newptr;
         }
         else if (cptr < oldptr) {
