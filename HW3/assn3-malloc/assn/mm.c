@@ -84,23 +84,41 @@ void *epilogue_bp;
 
 // #define DEBUG
 
+void print_whole_block(void *bp, size_t size){
+    dlist *blk = (dlist*)bp;
+    
+    if (blk != NULL) {
+        if (GET_ALLOC(HDRP((void*)blk)) == 0)
+            printf("XXXXX::");
+        printf ("H:%ld::", GET(HDRP((void*)blk)));
+        printf ("B:%p::", blk);
+        printf ("P:%p::", blk->prev);
+        printf ("N:%p\n", blk->next);
+
+        void *end = bp + ((size == 0)?GET_SIZE(HDRP(bp)):size);
+        while(bp != end) {
+            printf("%ld::", GET(bp));
+            bp++;
+        }
+        printf("\n");
+    }
+    else
+        printf("BLOCK IS NULL\n");
+}
+
 void print_block(void *bp)
 {
     dlist *blk = (dlist*)bp;
     if (blk != NULL) {
-        if (GET_ALLOC(HDRP((void*)blk)) == 0){}
-            // printf("XXXXX::");
-        // printf ("H:%ld::", GET(HDRP((void*)blk)));
-        // printf ("B:%p::", blk);
-        // printf ("P:%p::", blk->prev);
-        // printf ("N:%p\n", blk->next);
+        if (GET_ALLOC(HDRP((void*)blk)) == 0)
+            printf("XXXXX::");
+        printf ("H:%ld::", GET(HDRP((void*)blk)));
+        printf ("B:%p::", blk);
+        printf ("P:%p::", blk->prev);
+        printf ("N:%p\n", blk->next);
     }
     else
-    {
-#ifdef DEBUG
         printf("BLOCK IS NULL\n");
-#endif
-    }
 }
 
 void print_list(int index)
@@ -134,8 +152,15 @@ int insert_node (void *new_bp)
     utilization[index]++;
 
     dlist *new_node = (dlist*)new_bp;
-    new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->next = NULL;
+
+    // dlist *head_node = (dlist*)sep_list_head[index];
+    // if (head_node != NULL) {
+    //     head_node->prev = new_node;
+    // }
+    // new_node->next = head_node;
+    // sep_list_head[index] = new_bp;
 
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
@@ -646,6 +671,7 @@ void *mm_malloc(size_t size)
  *********************************************************/
 void *mm_realloc(void *ptr, size_t size)
 {
+    // printf("mm_realloc called %p : %ld\n", ptr, size);
     /* If size == 0 then this is just free, and we return NULL. */
     if(size == 0){
       mm_free(ptr);
@@ -655,42 +681,75 @@ void *mm_realloc(void *ptr, size_t size)
     if (ptr == NULL)
       return (mm_malloc(size));
 
+    if (!GET_ALLOC(HDRP(ptr)))
+        return (mm_malloc(size));
+
     // printf("BEFORE\n");
     // mm_check(3);
 
     void *oldptr = ptr;
     size_t copySize = GET_SIZE(HDRP(oldptr));
-    if (size < copySize) {
+
+    /* Adjust block size to include overhead and alignment reqs. */
+    size_t asize;
+    if (size <= DSIZE)
+        asize = 2 * DSIZE;
+    else
+        asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
+
+    if (asize <= copySize) {
         // need to shrink block
-        copySize = size;
-        // place(oldptr, size);
-        // printf("AFTER\n");
+        // copySize = size;
+        place(oldptr, asize);
+        // printf("AFTER place\n");
         // mm_check(3);
-        // return oldptr;
+        return oldptr;
     }
     // else {
-        // void *cptr = coalesce(oldptr, size);
+        // size_t prev_size = GET_SIZE(HDRP(PREV_BLOCK(oldptr)));
+    // PUT(HDRP(oldptr), PACK(copySize,0));
+    // PUT(FTRP(oldptr), PACK(copySize,0));
 
-        // if (cptr == NULL) {
+        void *cptr = coalesce(oldptr, asize);
+
+        if (cptr == NULL) {
         //     // could not coalesce
 
-            void *newptr = mm_malloc(size);
-            if (newptr == NULL)
-              return NULL;
+            // if (oldptr == PREV_BLKP(epilogue_bp)) {
+            //     // it is the last block on heap
+            // }
+            // else {
+                void *newptr = mm_malloc(size);
+                if (newptr == NULL)
+                  return NULL;
 
+                // Copy the old data.
+                memcpy(newptr, oldptr, copySize);
+                mm_free(oldptr);
+                return newptr;
+            // }
+        }
+        else if (cptr < oldptr) {
+            // prev blk pointer returned
             // Copy the old data.
-            memcpy(newptr, oldptr, copySize);
-            mm_free(oldptr);
-            return newptr;
-    //     }
-    //     else if (cptr < oldptr) {
-    //         // prev blk pointer returned
-    //         // Copy the old data.
-    //         memcpy(cptr, oldptr, copySize);
-    //         printf("AFTER\n");
-    //         mm_check(3);
-    //     }
-    //     return cptr;
+            // print_whole_block(oldptr, copySize);
+            memmove(cptr, oldptr, copySize);
+            //print_whole_block(cptr, copySize);
+
+            place(cptr, asize);
+            // print_whole_block(cptr, copySize);
+
+            // PUT(HDRP(cptr), PACK(GET_SIZE(HDRP(cptr)),1));
+            // PUT(FTRP(cptr), PACK(GET_SIZE(HDRP(cptr)),1));
+
+        }
+        else {
+            place(cptr, asize);
+        }
+        // printf("AFTER coalesce\n");
+        // mm_check(3);
+
+        return cptr;
     // }
 }
 
