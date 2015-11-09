@@ -92,35 +92,49 @@ typedef struct double_list
 
 #endif
 
-
-void print_whole_block(void *bp, size_t size){
+/**********************************************************
+ * print_whole_block
+ * Prints the entire block including its payload
+ **********************************************************/
+void print_whole_block(void *bp, size_t size)
+{
     dlist *blk = (dlist*)bp;
-    
+
     if (blk != NULL) {
         if (GET_ALLOC(HDRP((void*)blk)) == 0)
             PRINTDBG (("XXXXX::"));
+        
         PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
         PRINTDBG (("B:%p::", blk));
         PRINTDBG (("P:%p::", blk->prev));
         PRINTDBG (("N:%p\n", blk->next));
 
         void *end = bp + ((size == 0)?GET_SIZE(HDRP(bp)):size);
-        while(bp != end) {
+        
+        while (bp != end) {
             PRINTDBG (("%ld::", GET(bp)));
             bp++;
         }
+
         PRINTDBG (("\n"));
     }
     else
         PRINTDBG (("BLOCK IS NULL\n"));
 }
 
+/**********************************************************
+ * print_block
+ * Prints the header, current block pointer,
+ * previous block pointer, next block pointer
+ **********************************************************/
 void print_block(void *bp)
 {
     dlist *blk = (dlist*)bp;
+
     if (blk != NULL) {
-        if (GET_ALLOC(HDRP((void*)blk)) == 0)
+        if (GET_ALLOC(HDRP((void*)blk)) == 0)       //free block
             PRINTDBG (("XXXXX::"));
+
         PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
         PRINTDBG (("B:%p::", blk));
         PRINTDBG (("P:%p::", blk->prev));
@@ -130,95 +144,71 @@ void print_block(void *bp)
         PRINTDBG (("BLOCK IS NULL\n"));
 }
 
+/**********************************************************
+ * print_list
+ * Determines which block to print from the segregated list
+ * based on the index
+ **********************************************************/
 void print_list(int index)
 {
     dlist *current = sep_list_head[index];
-    while (current != NULL)
-    {
+    
+    while (current != NULL) {
         print_block((void*)current);
         current = current->next;
     }
 }
 
+/**********************************************************
+ * insert_node
+ * Inserts specified node into the corresponding index of
+ * the segregated free list
+ **********************************************************/
 int insert_node (void *new_bp)
 {
-    //mm_check(5);
-
     size_t size = GET_SIZE(HDRP(new_bp));
-
     int index = 0, i;
+
     for(i = 0; i < NUM_SEG_LIST; i++) {
         if (size >= SEG_SIZES[i])
             index = i;
     }
 
-
     PRINTDBG (("Inserting node: %ld\n", size));
 
-
     utilization[index]++;
-
     dlist *new_node = (dlist*)new_bp;
     new_node->prev = NULL;
     new_node->next = NULL;
 
-    // dlist *head_node = (dlist*)sep_list_head[index];
-    // if (head_node != NULL) {
-    //     head_node->prev = new_node;
-    // }
-    // new_node->next = head_node;
-    // sep_list_head[index] = new_bp;
-
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
         sep_list_tail[index] = new_bp;
-        // mm_check();
 
         return index;
     }
 
     dlist *head_node = (dlist*)sep_list_head[index];
-    // dlist *curr_node = (dlist*)sep_list_head[index];
-
-    // char ch;
-    // while (curr_node->next != NULL) {
-    //     if (GET_SIZE(HDRP((void*)curr_node)) < GET_SIZE(HDRP((void*)(curr_node->next)))) {
-    //         PRINTDBG (("Encountered error\n"));
-    //         scanf("%c\n", &ch);
-    //     }
-    //     curr_node = curr_node->next;
-    // }
       
-    if (size >= GET_SIZE(HDRP(sep_list_head[index]))) {
-        //insert before head
-
+    if (size >= GET_SIZE(HDRP(sep_list_head[index]))) { //insert before head
 
         PRINTDBG (("insert first\n"));
-
-
 
         head_node->prev = new_node;
         new_node->next = head_node;
         sep_list_head[index] = new_bp;
-        // mm_check();
 
         return index;
     }
 
     dlist* current = head_node;
 
-    if (current->next == NULL) {
-        // one node
-
+    if (current->next == NULL) {    //one node
 
         PRINTDBG (("insert second\n"));
 
-
-
         head_node->next = new_node;
         new_node->prev = head_node;
-
-        // mm_check();
         sep_list_tail[index] = new_bp;
 
         return index;
@@ -227,9 +217,7 @@ int insert_node (void *new_bp)
     while (current->next != NULL && size < GET_SIZE(HDRP(current->next)))
         current = current->next;
 
-
     PRINTDBG (("insert mid or last\n"));
-
 
     new_node->next = current->next;
     new_node->prev = current;
@@ -242,10 +230,13 @@ int insert_node (void *new_bp)
     current->next = new_node;
 
     return index;
-
-    // mm_check();
 }
 
+/**********************************************************
+ * remove_node
+ * Removes a specified node from the segregated list of
+ * free blocks
+ **********************************************************/
 void remove_node (int index, void *del_bp)
 {
     dlist *current = (dlist*) del_bp;
@@ -270,8 +261,6 @@ void remove_node (int index, void *del_bp)
 
     current->prev = NULL;
     current->next = NULL;
-
-    //mm_check();
 }
 
 /**********************************************************
@@ -282,11 +271,7 @@ void remove_node (int index, void *del_bp)
  **********************************************************/
 void* search_node (size_t req_size)
 {
-    //mm_check();
-
     PRINTDBG (("Searching: %ld\n", req_size));
-
-    // int counter = 0;
 
     int sl_index = 0, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -296,22 +281,25 @@ void* search_node (size_t req_size)
             break;
     }
 
-    //int rev_loop = 0;
-
     while (sl_index < NUM_SEG_LIST) {
         dlist *current = (dlist*)sep_list_head[sl_index];
-        //while (current != NULL) {
             if (current != NULL && req_size <= GET_SIZE(HDRP((void*)current))) {
                 remove_node(sl_index, (void*)current);
                 return (void*)current;
             }
-            //counter++;
-            //current = current->next;
-        //}
         sl_index++;
     }
     return NULL;
 }
+
+/**********************************************************
+ * coalesce
+ * Covers the 4 cases discussed in the text:
+ * - both neighbours are allocated
+ * - the next block is available for coalescing
+ * - the previous block is available for coalescing
+ * - both neighbours are available for coalescing
+ **********************************************************/
 
 void *coalesce(void *bp, size_t extendsize)
 {
@@ -319,11 +307,9 @@ void *coalesce(void *bp, size_t extendsize)
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
 
-    if (prev_alloc && next_alloc) {       /* Case 1 */
-
+    if (prev_alloc && next_alloc) {         /* Case 1 */
 
         PRINTDBG (("case 1\n"));
-
 
         if (extendsize != 0)
             return NULL;
@@ -341,11 +327,9 @@ void *coalesce(void *bp, size_t extendsize)
             next_index = i;
     }
 
-    if (prev_alloc && !next_alloc) { /* Case 2 */
-
+    if (prev_alloc && !next_alloc) {        /* Case 2 */
 
         PRINTDBG (("case 2: %d\n", next_index));
-
 
         if (extendsize > (size + next_size))
             return NULL;
@@ -359,13 +343,9 @@ void *coalesce(void *bp, size_t extendsize)
         return (bp);
     }
 
-    else if (!prev_alloc && next_alloc) { /* Case 3 */
-
+    else if (!prev_alloc && next_alloc) {   /* Case 3 */
 
         PRINTDBG (("case 3: %d\n", prev_index));
-
-
-        //mm_check(2);
 
         if (extendsize > (size + prev_size))
             return NULL;
@@ -379,7 +359,7 @@ void *coalesce(void *bp, size_t extendsize)
         return (PREV_BLKP(bp));
     }
 
-    else {            /* Case 4 */
+    else {                                  /* Case 4 */
 
 
         PRINTDBG (("case 4: %d :: %d\n", prev_index, next_index));
@@ -416,18 +396,11 @@ int mm_init(void)
     epilogue_bp = heap_listp + (4 * WSIZE);
     heap_listp += DSIZE;
 
-    //PRINTDBG (("HEAP_P: %p\n", heap_listp));
-    //PRINTDBG (("EPILOGUE P: %p\n", epilogue_bp));
-
-    // Init all structures
+    // Initialize all structures
     int i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
         sep_list_head[i] = NULL;
     }
-
-    // for(i = 0; i < NUM_SEG_LIST; i++) {
-    //     PRINTDBG (("UTIL [%d]: %d\n", i, utilization[i]));
-    // }
 
     return 0;
 }
