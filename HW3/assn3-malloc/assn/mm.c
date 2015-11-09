@@ -73,6 +73,7 @@ int mm_check(int d);
 size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144};
 int utilization [NUM_SEG_LIST] = {0};
 void* sep_list_head[NUM_SEG_LIST];
+void* sep_list_tail[NUM_SEG_LIST];
 
 typedef struct double_list
 {
@@ -81,6 +82,9 @@ typedef struct double_list
 }dlist;
 
 void *epilogue_bp;
+
+int re_bs = 0;
+int re_ws = 0;
 
 // #define DEBUG
 
@@ -135,6 +139,8 @@ void print_list(int index)
 
 int insert_node (void *new_bp)
 {
+    //mm_check(5);
+
     size_t size = GET_SIZE(HDRP(new_bp));
 
     int index = 0, i;
@@ -162,15 +168,25 @@ int insert_node (void *new_bp)
 
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
-
+        sep_list_tail[index] = new_bp;
         // mm_check();
 
         return index;
     }
 
     dlist *head_node = (dlist*)sep_list_head[index];
+    // dlist *curr_node = (dlist*)sep_list_head[index];
+
+    // char ch;
+    // while (curr_node->next != NULL) {
+    //     if (GET_SIZE(HDRP((void*)curr_node)) < GET_SIZE(HDRP((void*)(curr_node->next)))) {
+    //         printf("Encountered error\n");
+    //         scanf("%c\n", &ch);
+    //     }
+    //     curr_node = curr_node->next;
+    // }
       
-    if (size <= GET_SIZE(HDRP(sep_list_head[index]))) {
+    if (size >= GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
 
 #ifdef DEBUG
@@ -181,7 +197,6 @@ int insert_node (void *new_bp)
         head_node->prev = new_node;
         new_node->next = head_node;
         sep_list_head[index] = new_bp;
-
         // mm_check();
 
         return index;
@@ -201,11 +216,12 @@ int insert_node (void *new_bp)
         new_node->prev = head_node;
 
         // mm_check();
+        sep_list_tail[index] = new_bp;
 
         return index;
     }
 
-    while (current->next != NULL && size > GET_SIZE(HDRP(current->next)))
+    while (current->next != NULL && size < GET_SIZE(HDRP(current->next)))
         current = current->next;
 
 #ifdef DEBUG
@@ -217,6 +233,8 @@ int insert_node (void *new_bp)
 
     if (current->next != NULL)
         current->next->prev = new_node;
+    else
+        sep_list_tail[index] = new_bp;
 
     current->next = new_node;
 
@@ -259,7 +277,7 @@ void* search_node (size_t req_size)
 #ifdef DEBUG
     printf("Searching: %ld\n", req_size);
 #endif
-    int counter = 0;
+    // int counter = 0;
 
     int sl_index = 0, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -269,20 +287,22 @@ void* search_node (size_t req_size)
             break;
     }
 
+    //int rev_loop = 0;
+
     while (sl_index < NUM_SEG_LIST) {
         dlist *current = (dlist*)sep_list_head[sl_index];
-        while (current != NULL) {
-            if (req_size <= GET_SIZE(HDRP((void*)current))) {
+        //while (current != NULL) {
+            if (current != NULL && req_size <= GET_SIZE(HDRP((void*)current))) {
                 remove_node(sl_index, (void*)current);
 #ifdef DEBUG
                 printf("COUNTER: %d ---- %d ------\n", sl_index, counter);
 #endif
                 return (void*)current;
             }
-            counter++;
-            current = current->next;
-        }
-       sl_index++;
+            //counter++;
+            //current = current->next;
+        //}
+        sl_index++;
     }
     return NULL;
 }
@@ -647,23 +667,24 @@ void *mm_malloc(size_t size)
 
     /* No fit found. Get more memory and place the block */
     // Check if last block is not allocated
-    int csize = asize;
+//     int csize = asize;
 
-    if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
-        size_t lb_size = GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)));
+//     if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
+//         size_t lb_size = GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)));
 
-#ifdef DEBUG
-        printf("Last block free: %ld\n", lb_size);
-#endif
+// #ifdef DEBUG
+//         printf("Last block free: %ld\n", lb_size);
+// #endif
 
-        size -= lb_size;
-        if (size <= DSIZE)
-            csize = 2 * DSIZE;
-        else
-            csize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
-    }
+//         size -= lb_size;
+//         if (size <= DSIZE)
+//             csize = 2 * DSIZE;
+//         else
+//             csize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
+//     }
 
-    extendsize = MAX(csize, CHUNKSIZE);
+//     extendsize = MAX(csize, CHUNKSIZE);
+    extendsize = MAX(asize, CHUNKSIZE);
     if ((bp = extend_heap(extendsize/WSIZE)) == NULL)
         return NULL;
     place(bp, asize);
@@ -719,6 +740,7 @@ void *mm_realloc(void *ptr, size_t size)
         void *cptr = coalesce(oldptr, asize);
 
         if (cptr == NULL) {
+            // printf("worst scenario: %d\n", ++re_ws);
         //     // could not coalesce
 
             // if (oldptr == PREV_BLKP(epilogue_bp)) {
@@ -759,6 +781,8 @@ void *mm_realloc(void *ptr, size_t size)
             // }
         }
         else if (cptr < oldptr) {
+
+            // printf("worst scenario: %d\n", ++re_ws);
             // prev blk pointer returned
             // Copy the old data.
             // print_whole_block(oldptr, copySize);
@@ -773,6 +797,7 @@ void *mm_realloc(void *ptr, size_t size)
 
         }
         else {
+            // printf("best scenario: %d\n", ++re_bs);
             place(cptr, asize);
         }
         // printf("AFTER coalesce\n");
@@ -810,6 +835,9 @@ int mm_check(int d){
                 printf("sep_list_head[%d] is NULL\n", i);
             }
         }
+    }
+    if (d == 5) {
+
     }
     printf("----------------------------------------------------\n");
     //scanf("%c\n",&c);
