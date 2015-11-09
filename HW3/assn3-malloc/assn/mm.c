@@ -68,9 +68,9 @@ void* heap_listp = NULL;
 
 int mm_check(int d);
 
-#define NUM_SEG_LIST 12
+#define NUM_SEG_LIST 14
 
-size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 2048, 8192, 16384, 32768, 65536, 131072, 262144};
+size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144};
 int utilization [NUM_SEG_LIST] = {0};
 void* sep_list_head[NUM_SEG_LIST];
 
@@ -141,8 +141,6 @@ int insert_node (void *new_bp)
     for(i = 0; i < NUM_SEG_LIST; i++) {
         if (size >= SEG_SIZES[i])
             index = i;
-        else
-            break;
     }
 
 #ifdef DEBUG
@@ -258,6 +256,10 @@ void remove_node (int index, void *del_bp)
 void* search_node (size_t req_size)
 {
     //mm_check();
+#ifdef DEBUG
+    printf("Searching: %ld\n", req_size);
+#endif
+    int counter = 0;
 
     int sl_index = 0, i;
     for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -272,11 +274,15 @@ void* search_node (size_t req_size)
         while (current != NULL) {
             if (req_size <= GET_SIZE(HDRP((void*)current))) {
                 remove_node(sl_index, (void*)current);
+#ifdef DEBUG
+                printf("COUNTER: %d ---- %d ------\n", sl_index, counter);
+#endif
                 return (void*)current;
             }
+            counter++;
             current = current->next;
         }
-        sl_index++;
+       sl_index++;
     }
     return NULL;
 }
@@ -717,6 +723,29 @@ void *mm_realloc(void *ptr, size_t size)
 
             // if (oldptr == PREV_BLKP(epilogue_bp)) {
             //     // it is the last block on heap
+
+            //     char *bp;
+            //     size_t size;
+            //     size_t words = (asize - copySize) / WSIZE;
+
+            //     /* Allocate an even number of words to maintain alignments */
+            //     size = (words % 2) ? (words+1) * WSIZE : words * WSIZE;
+            //     if ( (bp = mem_sbrk(size)) == (void *)-1 )
+            //         return NULL;
+
+            //     /* Initialize free block header/footer and the epilogue header */
+            //     PUT(HDRP(bp), PACK(size, 0));                // free block header
+            //     PUT(FTRP(bp), PACK(size, 0));                // free block footer
+            //     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1));        // new epilogue header
+
+            //     epilogue_bp = NEXT_BLKP(bp);
+
+            //     size += copySize;
+            //     PUT(FTRP(bp), PACK(size, 1));
+            //     PUT(HDRP(oldptr), PACK(size, 1));
+
+            //     place(oldptr, asize);
+            //     return oldptr;
             // }
             // else {
                 void *newptr = mm_malloc(size);
