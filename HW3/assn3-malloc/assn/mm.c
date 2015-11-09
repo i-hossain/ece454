@@ -71,9 +71,8 @@ int mm_check(int d);
 #define NUM_SEG_LIST 14
 
 size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144};
-int utilization [NUM_SEG_LIST] = {0};
+
 void* sep_list_head[NUM_SEG_LIST];
-void* sep_list_tail[NUM_SEG_LIST];
 
 typedef struct double_list
 {
@@ -81,33 +80,39 @@ typedef struct double_list
     struct double_list* next;
 }dlist;
 
-void *epilogue_bp;
+#define DEBUG_BUILD
 
-int re_bs = 0;
-int re_ws = 0;
+#ifdef DEBUG_BUILD
 
-// #define DEBUG
+#define PRINTDBG(x) (printf x)
+
+#else
+
+#define PRINTDBG(x) ()
+
+#endif
+
 
 void print_whole_block(void *bp, size_t size){
     dlist *blk = (dlist*)bp;
     
     if (blk != NULL) {
         if (GET_ALLOC(HDRP((void*)blk)) == 0)
-            printf("XXXXX::");
-        printf ("H:%ld::", GET(HDRP((void*)blk)));
-        printf ("B:%p::", blk);
-        printf ("P:%p::", blk->prev);
-        printf ("N:%p\n", blk->next);
+            PRINTDBG (("XXXXX::"));
+        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
+        PRINTDBG (("B:%p::", blk));
+        PRINTDBG (("P:%p::", blk->prev));
+        PRINTDBG (("N:%p\n", blk->next));
 
         void *end = bp + ((size == 0)?GET_SIZE(HDRP(bp)):size);
         while(bp != end) {
-            printf("%ld::", GET(bp));
+            PRINTDBG (("%ld::", GET(bp)));
             bp++;
         }
-        printf("\n");
+        PRINTDBG (("\n"));
     }
     else
-        printf("BLOCK IS NULL\n");
+        PRINTDBG (("BLOCK IS NULL\n"));
 }
 
 void print_block(void *bp)
@@ -115,26 +120,24 @@ void print_block(void *bp)
     dlist *blk = (dlist*)bp;
     if (blk != NULL) {
         if (GET_ALLOC(HDRP((void*)blk)) == 0)
-            printf("XXXXX::");
-        printf ("H:%ld::", GET(HDRP((void*)blk)));
-        printf ("B:%p::", blk);
-        printf ("P:%p::", blk->prev);
-        printf ("N:%p\n", blk->next);
+            PRINTDBG (("XXXXX::"));
+        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
+        PRINTDBG (("B:%p::", blk));
+        PRINTDBG (("P:%p::", blk->prev));
+        PRINTDBG (("N:%p\n", blk->next));
     }
     else
-        printf("BLOCK IS NULL\n");
+        PRINTDBG (("BLOCK IS NULL\n"));
 }
 
 void print_list(int index)
 {
-    //char c;
     dlist *current = sep_list_head[index];
     while (current != NULL)
     {
         print_block((void*)current);
         current = current->next;
     }
-    //scanf ("%c\n", &c);
 }
 
 int insert_node (void *new_bp)
@@ -149,9 +152,9 @@ int insert_node (void *new_bp)
             index = i;
     }
 
-#ifdef DEBUG
-    printf("Inserting node: %ld\n", size);
-#endif
+
+    PRINTDBG (("Inserting node: %ld\n", size));
+
 
     utilization[index]++;
 
@@ -180,7 +183,7 @@ int insert_node (void *new_bp)
     // char ch;
     // while (curr_node->next != NULL) {
     //     if (GET_SIZE(HDRP((void*)curr_node)) < GET_SIZE(HDRP((void*)(curr_node->next)))) {
-    //         printf("Encountered error\n");
+    //         PRINTDBG (("Encountered error\n"));
     //         scanf("%c\n", &ch);
     //     }
     //     curr_node = curr_node->next;
@@ -189,9 +192,9 @@ int insert_node (void *new_bp)
     if (size >= GET_SIZE(HDRP(sep_list_head[index]))) {
         //insert before head
 
-#ifdef DEBUG
-        printf("insert first\n");
-#endif
+
+        PRINTDBG (("insert first\n"));
+
 
 
         head_node->prev = new_node;
@@ -207,9 +210,9 @@ int insert_node (void *new_bp)
     if (current->next == NULL) {
         // one node
 
-#ifdef DEBUG
-        printf("insert second\n");
-#endif
+
+        PRINTDBG (("insert second\n"));
+
 
 
         head_node->next = new_node;
@@ -224,9 +227,9 @@ int insert_node (void *new_bp)
     while (current->next != NULL && size < GET_SIZE(HDRP(current->next)))
         current = current->next;
 
-#ifdef DEBUG
-    printf("insert mid or last\n");
-#endif
+
+    PRINTDBG (("insert mid or last\n"));
+
 
     new_node->next = current->next;
     new_node->prev = current;
@@ -251,11 +254,11 @@ void remove_node (int index, void *del_bp)
         if (sep_list_head[index] != current)
             return;
 
-    // printf("Removing node\n");
-    // printf ("H:%ld::", GET(HDRP((void*)current)));
-    // printf ("B:%p::", current);
-    // printf ("P:%p::", current->prev);
-    // printf ("N:%p\n", current->next);
+    PRINTDBG (("Removing node\n"));
+    PRINTDBG (("H:%ld::", GET(HDRP((void*)current))));
+    PRINTDBG (("B:%p::", current));
+    PRINTDBG (("P:%p::", current->prev));
+    PRINTDBG (("N:%p\n", current->next));
 
     if (current->prev != NULL)
         current->prev->next = current->next;
@@ -274,9 +277,9 @@ void remove_node (int index, void *del_bp)
 void* search_node (size_t req_size)
 {
     //mm_check();
-#ifdef DEBUG
-    printf("Searching: %ld\n", req_size);
-#endif
+
+    PRINTDBG (("Searching: %ld\n", req_size));
+
     // int counter = 0;
 
     int sl_index = 0, i;
@@ -294,9 +297,6 @@ void* search_node (size_t req_size)
         //while (current != NULL) {
             if (current != NULL && req_size <= GET_SIZE(HDRP((void*)current))) {
                 remove_node(sl_index, (void*)current);
-#ifdef DEBUG
-                printf("COUNTER: %d ---- %d ------\n", sl_index, counter);
-#endif
                 return (void*)current;
             }
             //counter++;
@@ -315,9 +315,9 @@ void *coalesce(void *bp, size_t extendsize)
 
     if (prev_alloc && next_alloc) {       /* Case 1 */
 
-#ifdef DEBUG
-        printf("case 1\n");
-#endif
+
+        PRINTDBG (("case 1\n"));
+
 
         if (extendsize != 0)
             return NULL;
@@ -337,9 +337,9 @@ void *coalesce(void *bp, size_t extendsize)
 
     if (prev_alloc && !next_alloc) { /* Case 2 */
 
-#ifdef DEBUG
-        printf("case 2: %d\n", next_index);
-#endif
+
+        PRINTDBG (("case 2: %d\n", next_index));
+
 
         if (extendsize > (size + next_size))
             return NULL;
@@ -355,9 +355,9 @@ void *coalesce(void *bp, size_t extendsize)
 
     else if (!prev_alloc && next_alloc) { /* Case 3 */
 
-#ifdef DEBUG
-        printf("case 3: %d\n", prev_index);
-#endif
+
+        PRINTDBG (("case 3: %d\n", prev_index));
+
 
         //mm_check(2);
 
@@ -375,9 +375,9 @@ void *coalesce(void *bp, size_t extendsize)
 
     else {            /* Case 4 */
 
-#ifdef DEBUG
-        printf("case 4: %d :: %d\n", prev_index, next_index);
-#endif
+
+        PRINTDBG (("case 4: %d :: %d\n", prev_index, next_index));
+
         if (extendsize > (size + prev_size + next_size))
             return NULL;
 
@@ -410,8 +410,8 @@ int mm_init(void)
     epilogue_bp = heap_listp + (4 * WSIZE);
     heap_listp += DSIZE;
 
-    //printf("HEAP_P: %p\n", heap_listp);
-    //printf("EPILOGUE P: %p\n", epilogue_bp);
+    //PRINTDBG (("HEAP_P: %p\n", heap_listp));
+    //PRINTDBG (("EPILOGUE P: %p\n", epilogue_bp));
 
     // Init all structures
     int i;
@@ -420,7 +420,7 @@ int mm_init(void)
     }
 
     // for(i = 0; i < NUM_SEG_LIST; i++) {
-    //     printf("UTIL [%d]: %d\n", i, utilization[i]);
+    //     PRINTDBG (("UTIL [%d]: %d\n", i, utilization[i]));
     // }
 
     return 0;
@@ -504,18 +504,18 @@ void *deferred_coalesce(size_t asize)
  **********************************************************/
 void *extend_heap(size_t words)
 {
-    //printf("LAST BLK: %ld\n", GET_SIZE(FTRP(PREV_BLKP(epilogue_bp))));
+    //PRINTDBG (("LAST BLK: %ld\n", GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)))));
     // if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
     //     words -= (GET_SIZE(FTRP(PREV_BLKP(epilogue_bp))) / WSIZE);
     // }
 
-    // printf("Extend heap: %ld\n", words * WSIZE);
+    // PRINTDBG (("Extend heap: %ld\n", words * WSIZE));
     char *bp;
     size_t size;
 
     /* Allocate an even number of words to maintain alignments */
     size = (words % 2) ? (words+1) * WSIZE : words * WSIZE;
-    if ( (bp = mem_sbrk(size)) == (void *)-1 )
+    if ((bp = mem_sbrk(size)) == (void *)-1 )
         return NULL;
 
     /* Initialize free block header/footer and the epilogue header */
@@ -562,9 +562,9 @@ void place(void* bp, size_t asize)
     /* Get the current block size */
     size_t bsize = GET_SIZE(HDRP(bp));
 
-#ifdef DEBUG
-    printf("placing %ld -> %ld\n", asize, bsize);
-#endif
+
+    PRINTDBG (("placing %ld -> %ld\n", asize, bsize));
+
 
     if (bsize - asize >= 4 * WSIZE) {
         // min block size
@@ -589,9 +589,9 @@ void mm_free(void *bp)
 {
     // "I am become death, destroyer of the blocks."
 
-#ifdef DEBUG
-    printf("mm_free invoked: %p\n", bp);
-#endif
+
+    PRINTDBG (("mm_free invoked: %p\n", bp));
+
 
     //mm_check();
 
@@ -601,7 +601,7 @@ void mm_free(void *bp)
 
     // double free?! - check if bp is already free
     if (!GET_ALLOC(HDRP(bp))) {
-        // printf("double free called!!\n");
+        // PRINTDBG (("double free called!!\n"));
         return;
     }
 
@@ -649,9 +649,9 @@ void *mm_malloc(size_t size)
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1))/ DSIZE);
 
-#ifdef DEBUG
-    printf("mm_malloc invoked: %ld :: %ld\n", size, asize);
-#endif
+
+    PRINTDBG (("mm_malloc invoked: %ld :: %ld\n", size, asize));
+
 
     /* Search the free list for a fit */
     if ((bp = search_node(asize)) != NULL) {
@@ -672,9 +672,9 @@ void *mm_malloc(size_t size)
 //     if (!GET_ALLOC(HDRP(PREV_BLKP(epilogue_bp)))) {
 //         size_t lb_size = GET_SIZE(FTRP(PREV_BLKP(epilogue_bp)));
 
-// #ifdef DEBUG
-//         printf("Last block free: %ld\n", lb_size);
-// #endif
+// 
+//         PRINTDBG (("Last block free: %ld\n", lb_size));
+// 
 
 //         size -= lb_size;
 //         if (size <= DSIZE)
@@ -698,7 +698,7 @@ void *mm_malloc(size_t size)
  *********************************************************/
 void *mm_realloc(void *ptr, size_t size)
 {
-    // printf("mm_realloc called %p : %ld\n", ptr, size);
+    // PRINTDBG (("mm_realloc called %p : %ld\n", ptr, size));
     /* If size == 0 then this is just free, and we return NULL. */
     if(size == 0){
       mm_free(ptr);
@@ -711,7 +711,7 @@ void *mm_realloc(void *ptr, size_t size)
     if (!GET_ALLOC(HDRP(ptr)))
         return (mm_malloc(size));
 
-    // printf("BEFORE\n");
+    // PRINTDBG (("BEFORE\n"));
     // mm_check(3);
 
     void *oldptr = ptr;
@@ -728,7 +728,7 @@ void *mm_realloc(void *ptr, size_t size)
         // need to shrink block
         // copySize = size;
         place(oldptr, asize);
-        // printf("AFTER place\n");
+        // PRINTDBG (("AFTER place\n"));
         // mm_check(3);
         return oldptr;
     }
@@ -740,7 +740,7 @@ void *mm_realloc(void *ptr, size_t size)
         void *cptr = coalesce(oldptr, asize);
 
         if (cptr == NULL) {
-            // printf("worst scenario: %d\n", ++re_ws);
+            // PRINTDBG (("worst scenario: %d\n", ++re_ws));
         //     // could not coalesce
 
             // if (oldptr == PREV_BLKP(epilogue_bp)) {
@@ -752,7 +752,7 @@ void *mm_realloc(void *ptr, size_t size)
 
             //     /* Allocate an even number of words to maintain alignments */
             //     size = (words % 2) ? (words+1) * WSIZE : words * WSIZE;
-            //     if ( (bp = mem_sbrk(size)) == (void *)-1 )
+            //     if ((bp = mem_sbrk(size)) == (void *)-1 )
             //         return NULL;
 
             //     /* Initialize free block header/footer and the epilogue header */
@@ -782,7 +782,7 @@ void *mm_realloc(void *ptr, size_t size)
         }
         else if (cptr < oldptr) {
 
-            // printf("worst scenario: %d\n", ++re_ws);
+            // PRINTDBG (("worst scenario: %d\n", ++re_ws));
             // prev blk pointer returned
             // Copy the old data.
             // print_whole_block(oldptr, copySize);
@@ -797,10 +797,10 @@ void *mm_realloc(void *ptr, size_t size)
 
         }
         else {
-            // printf("best scenario: %d\n", ++re_bs);
+            // PRINTDBG (("best scenario: %d\n", ++re_bs));
             place(cptr, asize);
         }
-        // printf("AFTER coalesce\n");
+        // PRINTDBG (("AFTER coalesce\n"));
         // mm_check(3);
 
         return cptr;
@@ -815,9 +815,9 @@ void *mm_realloc(void *ptr, size_t size)
 int mm_check(int d){
     
     //char c;
-    //printf("Enter number:");
+    //PRINTDBG (("Enter number:"));
     //scanf("%d\n", &d);
-    printf("----------------------------------------------------\n");
+    PRINTDBG (("----------------------------------------------------\n"));
     if (d == 1 || d == 3) { // print if d = 1
         void *bp;
         for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
@@ -832,14 +832,12 @@ int mm_check(int d){
                 print_list(i);
             }
             else {
-                printf("sep_list_head[%d] is NULL\n", i);
+                PRINTDBG (("sep_list_head[%d] is NULL\n", i));
             }
         }
     }
-    if (d == 5) {
 
-    }
-    printf("----------------------------------------------------\n");
+    PRINTDBG (("----------------------------------------------------\n"));
     //scanf("%c\n",&c);
 
     return 1;
