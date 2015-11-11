@@ -65,7 +65,7 @@ team_t team = {
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
 // Global definitions for Lab
-#define DEBUG_BUILD
+//#define DEBUG_BUILD
 
 #ifdef DEBUG_BUILD
 #define PRINTDBG(x) (printf x)
@@ -93,6 +93,7 @@ void print_block(void *bp);
 void print_heap();
 void print_list(int index);
 void print_sep_list();
+int is_in_heap(void *bp);
 
 /**********************************************************
  * insert_node
@@ -170,6 +171,10 @@ int insert_node (void *new_bp)
 void remove_node (int index, void *del_bp)
 {
     dlist *current = (dlist*) del_bp;
+
+    if ((current->prev != NULL && !is_in_heap(current->prev)) || 
+        (current->next != NULL && !is_in_heap(current->next)))
+        return;
 
     if (current->prev == NULL && current->next == NULL)
         if (sep_list_head[index] != current)
@@ -539,7 +544,11 @@ void *mm_realloc(void *ptr, size_t size)
         return oldptr;
     }
 
+    // print_heap();
     void *cptr = coalesce(oldptr, asize);
+    // print_heap();
+    // char c;
+    // scanf("%c\n", &c);
 
     if (cptr == NULL) {
         // If coalescing was not possible then allocate new block
@@ -555,11 +564,33 @@ void *mm_realloc(void *ptr, size_t size)
     else if (cptr < oldptr) {
         // If coalesced with prev block then memmove the data
         memmove(cptr, oldptr, copySize);
+
         place(cptr, asize);
     }
     else {
         // If coalesced with next block then slice the block
-        place(cptr, asize);
+        //place(cptr, asize);
+        
+        /* Get the current block size */
+        size_t bsize = GET_SIZE(HDRP(cptr));
+
+        PRINTDBG (("placing %ld -> %ld\n", asize, bsize));
+
+        // If slicing will produce a block less than 2 * DSIZE then dont slice.
+        if (bsize - asize >= 4 * WSIZE) {
+            // min block size
+            PUT(HDRP(cptr), PACK(asize, 1));
+            PUT(FTRP(cptr), PACK(asize, 1));
+
+            PUT(HDRP(NEXT_BLKP(cptr)), PACK(bsize - asize, 0));
+            PUT(FTRP(NEXT_BLKP(cptr)), PACK(bsize - asize, 0));
+
+            // Dont insert block in free list so it can be used later for realloc
+        }
+        else {
+            PUT(HDRP(cptr), PACK(bsize, 1));
+            PUT(FTRP(cptr), PACK(bsize, 1));
+        }
     }
 
     return cptr;
