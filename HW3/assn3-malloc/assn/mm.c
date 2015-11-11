@@ -64,11 +64,18 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
-void* heap_listp = NULL;
+// Global definitions for Lab
+#define DEBUG_BUILD
 
-int mm_check(int d);
+#ifdef DEBUG_BUILD
+#define PRINTDBG(x) (printf x)
+#else
+#define PRINTDBG(x)
+#endif
 
 #define NUM_SEG_LIST 14
+
+void* heap_listp = NULL;
 
 size_t SEG_SIZES[NUM_SEG_LIST] = {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144};
 
@@ -80,100 +87,12 @@ typedef struct double_list
     struct double_list* next;
 }dlist;
 
-#define DEBUG_BUILD
-
-#ifdef DEBUG_BUILD
-
-#define PRINTDBG(x) (printf x)
-
-#else
-
-#define PRINTDBG(x)
-
-#endif
-
-/**********************************************************
- * print_whole_block
- * Prints the entire block including its payload
- **********************************************************/
-void print_whole_block(void *bp, size_t size)
-{
-    dlist *blk = (dlist*)bp;
-
-    if (blk != NULL) {
-        if (GET_ALLOC(HDRP((void*)blk)) == 0)
-            PRINTDBG (("XXXXX::"));
-        
-        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
-        PRINTDBG (("B:%p::", blk));
-        PRINTDBG (("P:%p::", blk->prev));
-        PRINTDBG (("N:%p\n", blk->next));
-
-        void *end = bp + ((size == 0)?GET_SIZE(HDRP(bp)):size);
-        
-        while (bp != end) {
-            PRINTDBG (("%ld::", GET(bp)));
-            bp++;
-        }
-
-        PRINTDBG (("\n"));
-    }
-    else
-        PRINTDBG (("BLOCK IS NULL\n"));
-}
-
-/**********************************************************
- * is_in_heap
- * Checks if the block pointer is in heap. Prints an error
- * message if the block is outside the heap
- **********************************************************/
-int is_in_heap(void *bp)
-{
-    if (bp < mem_heap_lo() || bp > mem_heap_hi())
-    {
-        PRINTDBG (("The block is not on the heap\n"));
-        return 0;
-    }
-    
-    return 1;
-}
-
-/**********************************************************
- * print_block
- * Prints the header, current block pointer,
- * previous block pointer, next block pointer
- **********************************************************/
-void print_block(void *bp)
-{
-    dlist *blk = (dlist*)bp;
-
-    if (blk != NULL) {
-        if (GET_ALLOC(HDRP((void*)blk)) == 0)       //free block
-            PRINTDBG (("XXXXX::"));
-
-        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
-        PRINTDBG (("B:%p::", blk));
-        PRINTDBG (("P:%p::", blk->prev));
-        PRINTDBG (("N:%p\n", blk->next));
-    }
-    else
-        PRINTDBG (("BLOCK IS NULL\n"));
-}
-
-/**********************************************************
- * print_list
- * Determines which block to print from the segregated list
- * based on the index
- **********************************************************/
-void print_list(int index)
-{
-    dlist *current = sep_list_head[index];
-    
-    while (current != NULL) {
-        print_block((void*)current);
-        current = current->next;
-    }
-}
+int mm_check(void);
+void print_block_contents(void *bp, size_t size);
+void print_block(void *bp);
+void print_heap();
+void print_list(int index);
+void print_sep_list();
 
 /**********************************************************
  * insert_node
@@ -250,7 +169,6 @@ int insert_node (void *new_bp)
  **********************************************************/
 void remove_node (int index, void *del_bp)
 {
-    mm_check(2);
     dlist *current = (dlist*) del_bp;
 
     if (current->prev == NULL && current->next == NULL)
@@ -273,8 +191,6 @@ void remove_node (int index, void *del_bp)
 
     current->prev = NULL;
     current->next = NULL;
-
-    mm_check(2);
 }
 
 // void* search_full (int sl_index, size_t req_size)
@@ -625,8 +541,6 @@ void *mm_realloc(void *ptr, size_t size)
 
     void *cptr = coalesce(oldptr, asize);
 
-    mm_check(3);
-
     if (cptr == NULL) {
         // If coalescing was not possible then allocate new block
         void *newptr = mm_malloc(size);
@@ -651,59 +565,187 @@ void *mm_realloc(void *ptr, size_t size)
     return cptr;
 }
 
+// Debugging functions
+
+/**********************************************************
+ * print_block_contents
+ * Prints the entire block including its payload
+ **********************************************************/
+void print_block_contents(void *bp, size_t size)
+{
+    dlist *blk = (dlist*)bp;
+
+    if (blk != NULL) {
+        if (GET_ALLOC(HDRP((void*)blk)) == 0)
+            PRINTDBG (("XXXXX::"));
+        
+        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
+        PRINTDBG (("B:%p::", blk));
+        PRINTDBG (("P:%p::", blk->prev));
+        PRINTDBG (("N:%p\n", blk->next));
+
+        void *end = bp + ((size == 0)?GET_SIZE(HDRP(bp)):size);
+        
+        while (bp != end) {
+            PRINTDBG (("%ld::", GET(bp)));
+            bp++;
+        }
+
+        PRINTDBG (("\n"));
+    }
+    else
+        PRINTDBG (("BLOCK IS NULL\n"));
+}
+
+/**********************************************************
+ * print_block
+ * Prints the header, current block pointer,
+ * previous block pointer, next block pointer
+ **********************************************************/
+void print_block(void *bp)
+{
+    dlist *blk = (dlist*)bp;
+
+    if (blk != NULL) {
+        if (GET_ALLOC(HDRP((void*)blk)) == 0)       //free block
+            PRINTDBG (("XXXXX::"));
+
+        PRINTDBG (("H:%ld::", GET(HDRP((void*)blk))));
+        PRINTDBG (("B:%p::", blk));
+        PRINTDBG (("P:%p::", blk->prev));
+        PRINTDBG (("N:%p\n", blk->next));
+    }
+    else
+        PRINTDBG (("BLOCK IS NULL\n"));
+}
+
+/**********************************************************
+ * print_heap
+ * Prints all the blocks in the heap till epilogue
+ **********************************************************/
+void print_heap()
+{
+    void *bp;
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        print_block(bp);
+    }
+}
+
+/**********************************************************
+ * print_list
+ * Determines which bin to print from the segregated list
+ * based on the index
+ **********************************************************/
+void print_list(int index)
+{
+    dlist *current = sep_list_head[index];
+    
+    while (current != NULL) {
+        print_block((void*)current);
+        current = current->next;
+    }
+}
+
+/**********************************************************
+ * print_sep_list
+ * Prints all the blocks in the segregated lists
+ **********************************************************/
+void print_sep_list()
+{
+    int i;
+    for(i = 0; i < NUM_SEG_LIST; i++) {
+        if (sep_list_head[i] != NULL) {
+            print_list(i);
+        }
+        else {
+            PRINTDBG (("sep_list_head[%d] is NULL\n", i));
+        }
+    }
+}
+
+/**********************************************************
+ * is_in_heap
+ * Checks if the block pointer is in heap. Prints an error
+ * message if the block is outside the heap
+ **********************************************************/
+int is_in_heap(void *bp)
+{
+    if (bp < mem_heap_lo() || bp > mem_heap_hi())
+    {
+        PRINTDBG (("The block is not on the heap\n"));
+        return 0;
+    }
+    
+    return 1;
+}
+
 /**********************************************************
  * mm_check
  * Check the consistency of the memory heap
  * Return nonzero if the heap is consistant.
  *********************************************************/
-int mm_check(int check)
+int mm_check(void)
 {
 #ifdef DEBUG_BUILD
-    if (check == 1 || check == 3) {
-        // Print the Heap with its size and start addresses and check for overlapping
-        void *bp;
-        for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
-        {
-            print_block(bp);
-        }
-    }
-    if (check == 2 || check == 3) {
-        // Print the separated lists and check if all blocks are actually free
-        int i;
-        for(i = 0; i < NUM_SEG_LIST; i++) {
-            if (sep_list_head[i] != NULL) {
-                print_list(i);
-            }
-            else {
-                PRINTDBG (("sep_list_head[%d] is NULL\n", i));
-            }
-        }
-    }
-    if (check == some arbitrary value) //Do the pointers in a heap block point to valid heap addresses?
-    {   
-        void *bp;           //To point at the start of the heap
-        size_t size = 0;        //To measure the total size of blocks on the heap
 
-        for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
-            if (bp < mem_heap_lo() || bp > mem_heap_hi()) {
-                PRINTDBG (("Block is outside the heap.\n"));
+    int i;
+    dlist *current;
+    void *bp; //To point at the start of the heap
+    size_t size = 0; //To measure the total size of blocks on the heap
+
+    // Check if every block in free list is actually marked free.
+    // If a allocated block is in the free list then it may result in segmentation faults
+    // while accessing the prev and next pointers. It will also result in the allocater manipulating 
+    // memory allocated to user which will be nasty!
+
+    for(i = 0; i < NUM_SEG_LIST; i++) {
+        current = sep_list_head[i];
+    
+        while (current != NULL) {
+            // Check if block is in heap
+            if (is_in_heap((void*)current) == 0)
+                return 0;
+
+            if (GET_ALLOC(HDRP((void*)current))) {
+                PRINTDBG (("block (%p) in free list is allocated!\n", current));
                 return 0;
             }
-            else {
-                size += GET_SIZE(HDRP(bp));     //Add the size of the current block to the total size of the calculated blocks on the heap so far
-            }
-        }
-                
-        if (size == mem_heapsize())
-            PRINTDBG (("The total size of all blocks on the heap match the heap size.\n"));
+            current = current->next;
         }
     }
 
+    // Check if there exist any free blocks that may have escaped coalescing. 
+    // If found, these cases result in internal fragmentation.
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        // Check if the current block is free and the next block is also free
+        // Since this is done in a sequential manner, we don't need to check the previous blk
+        if (!GET_ALLOC(HDRP(bp)) && (!GET_ALLOC(HDRP(NEXT_BLKP(bp))))) {
+            PRINTDBG (("Consecutive blocks (%p, %p) have escaped coalescing!\n", bp, NEXT_BLKP(bp)));
+            return 0;
+        }
+    }
+
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+        if (bp < mem_heap_lo() || bp > mem_heap_hi()) {
+            PRINTDBG (("Block is outside the heap.\n"));
+            return 0;
+        }
+        else {
+            size += GET_SIZE(HDRP(bp));     //Add the size of the current block to the total size of the calculated blocks on the heap so far
+        }
+    }
+            
+    if (size == mem_heapsize())
+        PRINTDBG (("The total size of all blocks on the heap match the heap size.\n"));
+
     if (mem_heapsize() > mem_pagesize())   //Check if heap size exceeded systems page size  
-            PRINTDBG (("Heap size is more than page size. TLB misses might occur\n"));
+        PRINTDBG (("Heap size is more than page size. TLB misses might occur\n"));
 
     char c;
     scanf("%c\n", &c);
+
 #endif
     return 1;
 }
