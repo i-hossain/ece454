@@ -24,7 +24,7 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "Mystery, Inc.",
+    "Kumo",
     /* First member's full name */
     "Rushab Ramesh Kumar",
     /* First member's email address */
@@ -88,7 +88,7 @@ typedef struct double_list
 
 #else
 
-#define PRINTDBG(x) ()
+#define PRINTDBG(x)
 
 #endif
 
@@ -176,14 +176,12 @@ int insert_node (void *new_bp)
 
     PRINTDBG (("Inserting node: %ld\n", size));
 
-    // utilization[index]++;
     dlist *new_node = (dlist*)new_bp;
     new_node->prev = NULL;
     new_node->next = NULL;
 
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
-        // sep_list_tail[index] = new_bp;
 
         return index;
     }
@@ -209,7 +207,6 @@ int insert_node (void *new_bp)
 
         head_node->next = new_node;
         new_node->prev = head_node;
-        //sep_list_tail[index] = new_bp;
 
         return index;
     }
@@ -224,8 +221,6 @@ int insert_node (void *new_bp)
 
     if (current->next != NULL)
         current->next->prev = new_node;
-    else
-        // sep_list_tail[index] = new_bp;
 
     current->next = new_node;
 
@@ -239,6 +234,7 @@ int insert_node (void *new_bp)
  **********************************************************/
 void remove_node (int index, void *del_bp)
 {
+    mm_check(2);
     dlist *current = (dlist*) del_bp;
 
     if (current->prev == NULL && current->next == NULL)
@@ -261,7 +257,35 @@ void remove_node (int index, void *del_bp)
 
     current->prev = NULL;
     current->next = NULL;
+
+    mm_check(2);
 }
+
+// void* search_full (int sl_index, size_t req_size)
+// {
+//     PRINTDBG (("Searching Full: %ld\n", req_size));
+
+//     void *found_node = NULL;
+
+//     while (sl_index < NUM_SEG_LIST) {
+//         dlist *current = (dlist*)sep_list_head[sl_index];
+//         while (current != NULL) {
+//             if (req_size <= GET_SIZE(HDRP((void*)current))) {
+//                 found_node = (void*)current;
+//             }
+//             else {
+//                 break;
+//             }
+//             current = current->next;
+//         }
+//         if (found_node != NULL) {
+//             remove_node(sl_index, found_node);
+//             return found_node;
+//         }
+//         sl_index++;
+//     }
+//     return NULL;
+// }
 
 /**********************************************************
  * Finds first fit
@@ -283,9 +307,14 @@ void* search_node (size_t req_size)
 
     while (sl_index < NUM_SEG_LIST) {
         dlist *current = (dlist*)sep_list_head[sl_index];
-            if (current != NULL && req_size <= GET_SIZE(HDRP((void*)current))) {
-                remove_node(sl_index, (void*)current);
-                return (void*)current;
+            if (current != NULL) {
+                if(req_size <= GET_SIZE(HDRP((void*)current))) {
+                    remove_node(sl_index, (void*)current);
+                    return (void*)current;
+                }
+                // else {
+                //     return search_full(sl_index+1, req_size);
+                // }
             }
         sl_index++;
     }
@@ -393,7 +422,6 @@ int mm_init(void)
     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
 
-    // epilogue_bp = heap_listp + (4 * WSIZE);
     heap_listp += DSIZE;
 
     // Initialize all structures
@@ -581,6 +609,8 @@ void *mm_realloc(void *ptr, size_t size)
 
     void *cptr = coalesce(oldptr, asize);
 
+    mm_check(3);
+
     if (cptr == NULL) {
         // If coalescing was not possible then allocate new block
         void *newptr = mm_malloc(size);
@@ -613,7 +643,7 @@ void *mm_realloc(void *ptr, size_t size)
 int mm_check(int check)
 {
 #ifdef DEBUG_BUILD
-    if (check == 1) {
+    if (check == 1 || check == 3) {
         // Print the Heap with its size and start addresses and check for overlapping
         void *bp;
         for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
@@ -621,7 +651,7 @@ int mm_check(int check)
             print_block(bp);
         }
     }
-    if (check == 2) {
+    if (check == 2 || check == 3) {
         // Print the separated lists and check if all blocks are actually free
         int i;
         for(i = 0; i < NUM_SEG_LIST; i++) {
@@ -633,6 +663,8 @@ int mm_check(int check)
             }
         }
     }
+    char c;
+    scanf("%c\n", &c);
 #endif
     return 1;
 }
