@@ -176,14 +176,14 @@ int insert_node (void *new_bp)
 
     PRINTDBG (("Inserting node: %ld\n", size));
 
-    utilization[index]++;
+    // utilization[index]++;
     dlist *new_node = (dlist*)new_bp;
     new_node->prev = NULL;
     new_node->next = NULL;
 
     if (sep_list_head[index] == NULL) {
         sep_list_head[index] = new_bp;
-        sep_list_tail[index] = new_bp;
+        // sep_list_tail[index] = new_bp;
 
         return index;
     }
@@ -209,7 +209,7 @@ int insert_node (void *new_bp)
 
         head_node->next = new_node;
         new_node->prev = head_node;
-        sep_list_tail[index] = new_bp;
+        //sep_list_tail[index] = new_bp;
 
         return index;
     }
@@ -225,7 +225,7 @@ int insert_node (void *new_bp)
     if (current->next != NULL)
         current->next->prev = new_node;
     else
-        sep_list_tail[index] = new_bp;
+        // sep_list_tail[index] = new_bp;
 
     current->next = new_node;
 
@@ -393,7 +393,7 @@ int mm_init(void)
     PUT(heap_listp + (2 * WSIZE), PACK(DSIZE, 1));   // prologue footer
     PUT(heap_listp + (3 * WSIZE), PACK(0, 1));    // epilogue header
 
-    epilogue_bp = heap_listp + (4 * WSIZE);
+    // epilogue_bp = heap_listp + (4 * WSIZE);
     heap_listp += DSIZE;
 
     // Initialize all structures
