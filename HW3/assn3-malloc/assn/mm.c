@@ -123,6 +123,22 @@ void print_whole_block(void *bp, size_t size)
 }
 
 /**********************************************************
+ * is_in_heap
+ * Checks if the block pointer is in heap. Prints an error
+ * message if the block is outside the heap
+ **********************************************************/
+int is_in_heap(void *bp)
+{
+    if (bp < mem_heap_lo() || bp > mem_heap_hi())
+    {
+        PRINTDBG (("The block is not on the heap\n"));
+        return 0;
+    }
+    
+    return 1;
+}
+
+/**********************************************************
  * print_block
  * Prints the header, current block pointer,
  * previous block pointer, next block pointer
@@ -482,7 +498,7 @@ void place(void* bp, size_t asize)
     PRINTDBG (("placing %ld -> %ld\n", asize, bsize));
 
     // If slicing will produce a block less than 2 * DSIZE then dont slice.
-    if (bsize - asize >= 2 * DSIZE) {
+    if (bsize - asize >= 4 * WSIZE) {
         // min block size
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
@@ -663,6 +679,29 @@ int mm_check(int check)
             }
         }
     }
+    if (check == some arbitrary value) //Do the pointers in a heap block point to valid heap addresses?
+    {   
+        void *bp;           //To point at the start of the heap
+        size_t size = 0;        //To measure the total size of blocks on the heap
+
+        for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+            if (bp < mem_heap_lo() || bp > mem_heap_hi()) {
+                PRINTDBG (("Block is outside the heap.\n"));
+                return 0;
+            }
+            else {
+                size += GET_SIZE(HDRP(bp));     //Add the size of the current block to the total size of the calculated blocks on the heap so far
+            }
+        }
+                
+        if (size == mem_heapsize())
+            PRINTDBG (("The total size of all blocks on the heap match the heap size.\n"));
+        }
+    }
+
+    if (mem_heapsize() > mem_pagesize())   //Check if heap size exceeded systems page size  
+            PRINTDBG (("Heap size is more than page size. TLB misses might occur\n"));
+
     char c;
     scanf("%c\n", &c);
 #endif
