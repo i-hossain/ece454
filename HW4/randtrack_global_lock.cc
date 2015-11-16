@@ -22,9 +22,11 @@ team_t team = {
     "rushab.kumar@mail.utoronto.ca",    /* First member email address */
 
     "Ismail Hossain",                   /* Second member full name */
-    "",                           /* Second member student number */
+    "998340175",                           /* Second member student number */
     "ridoy.hossain@mail.utoronto.ca"    /* Second member email address */
 };
+
+pthread_mutex_t global_lock;
 
 unsigned num_threads;
 unsigned samples_to_skip;
@@ -51,17 +53,22 @@ hash<sample,unsigned> h;
 typedef struct thread_data
 {
   int thread_id;
-  int stream_first;
-  int stream_last;
+  int start;
+  int end;
 }t_data;
 
 void *process_streams(void *arg) {
   t_data* data = (t_data*) arg;
 
+  int i,j,k;
+  int rnum;
+  unsigned key;
+  sample *s;
+
   printf("This is thread: %d\n", data->thread_id);
 
   // process streams starting with different initial numbers
-  for (i=0; i<NUM_SEED_STREAMS; i++){
+  for (i = data->start; i < data->end; i++){
     rnum = i;
 
     // collect a number of samples
@@ -75,6 +82,8 @@ void *process_streams(void *arg) {
       // force the sample to be within the range of 0..RAND_NUM_UPPER_BOUND-1
       key = rnum % RAND_NUM_UPPER_BOUND;
 
+      pthread_mutex_lock(&global_lock);
+
       // if this sample has not been counted before
       if (!(s = h.lookup(key))){
   
@@ -85,16 +94,15 @@ void *process_streams(void *arg) {
 
       // increment the count for the sample
       s->count++;
+
+      pthread_mutex_unlock(&global_lock);
     }
   }
 }
 
 int  
 main (int argc, char* argv[]){
-  int i,j,k;
-  int rnum;
-  unsigned key;
-  sample *s;
+  int i;
 
   // Print out team information
   printf( "Team Name: %s\n", team.team );
@@ -120,6 +128,35 @@ main (int argc, char* argv[]){
   h.setup(14);
 
   //loop through threads, create pthreads, call process stream
+
+  pthread_t *threads;
+  threads = (pthread_t*) malloc(sizeof(pthread_t) * num_threads);
+
+
+  if (pthread_mutex_init(&global_lock, NULL) != 0)
+    {
+        printf("\n global_lock init failed\n");
+        return 1;
+    }
+
+  int ems = NUM_SEED_STREAMS / num_threads;
+  int start = 0;
+
+  for (i = 0; i < num_threads; i++){
+
+    t_data *new_data = (t_data*) malloc(sizeof(t_data));
+    new_data->thread_id = i;
+    new_data->start = start;
+    new_data->end = start + ems;
+
+    pthread_create(&threads[i], NULL, process_streams, (void*)new_data);
+    
+    start = start + ems;
+  }
+
+  for (i = 0; i < num_threads; i++){
+    pthread_join(threads[i], NULL);
+  }
 
   // print a list of the frequency of all samples
   h.print();

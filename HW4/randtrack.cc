@@ -21,7 +21,7 @@ team_t team = {
     "rushab.kumar@mail.utoronto.ca",    /* First member email address */
 
     "Ismail Hossain",                   /* Second member full name */
-    "",                           /* Second member student number */
+    "998340175",                           /* Second member student number */
     "ridoy.hossain@mail.utoronto.ca"    /* Second member email address */
 };
 
