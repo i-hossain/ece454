@@ -3,6 +3,7 @@
 #define LIST_H
 
 #include <stdio.h>
+#include <pthread.h>
 
 template<class Ele, class Keytype> class list;
 
@@ -10,10 +11,16 @@ template<class Ele, class Keytype> class list {
  private:
   Ele *my_head;
   unsigned long long my_num_ele;
+#ifdef randtrack_list_lock
+  pthread_mutex_t list_lock;
+#endif
  public:
   list(){
     my_head = NULL;
     my_num_ele = 0;
+#ifdef randtrack_list_lock
+    pthread_mutex_init(&list_lock, NULL);
+#endif
   }
 
   void setup();
@@ -28,6 +35,11 @@ template<class Ele, class Keytype> class list {
   void print(FILE *f=stdout);
 
   void cleanup();
+
+#ifdef randtrack_list_lock
+  void lock() { pthread_mutex_lock(&list_lock); }
+  void unlock() { pthread_mutex_unlock(&list_lock); }
+#endif
 };
 
 template<class Ele, class Keytype> 

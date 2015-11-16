@@ -3,6 +3,7 @@
 #define HASH_H
 
 #include <stdio.h>
+#include <pthread.h>
 #include "list.h"
 
 #define HASH_INDEX(_addr,_size_mask) (((_addr) >> 2) & (_size_mask))
@@ -24,6 +25,12 @@ template<class Ele, class Keytype> class hash {
   void print(FILE *f=stdout);
   void reset();
   void cleanup();
+
+#ifdef randtrack_list_lock
+  list<Ele,Keytype> *get_list(Keytype the_key, unsigned the_idx);
+  //void incr_or_insert_if_absent(Keytype the_key);
+#endif
+  
 };
 
 template<class Ele, class Keytype> 
@@ -87,5 +94,32 @@ hash<Ele,Keytype>::insert(Ele *e){
   entries[HASH_INDEX(e->key(),my_size_mask)].push(e);
 }
 
+#ifdef randtrack_list_lock
+
+template<class Ele, class Keytype> 
+list<Ele,Keytype> *
+hash<Ele,Keytype>::get_list(Keytype the_key, unsigned the_idx){
+  if (the_idx == -1)
+    return &entries[HASH_INDEX(the_key,my_size_mask)];
+  return get_list(the_idx);
+}
+
+// template<class Ele, class Keytype> 
+// void
+// hash<Ele,Keytype>::incr_or_insert_if_absent(Keytype the_key){
+//   list<Ele,Keytype> *l;
+//   Ele *res;
+
+//   l = &entries[HASH_INDEX(the_key,my_size_mask)];
+//   l->lock();
+//   if (!(res = l->lookup(the_key))) {
+//     res = new Ele(the_key);
+//     l->push(res);
+//   }
+//   res->count++;
+//   l->unlock();
+// }
+
+#endif
 
 #endif
