@@ -30,7 +30,10 @@ template<class Ele, class Keytype> class hash {
   list<Ele,Keytype> *get_list(Keytype the_key, unsigned the_idx);
   //void incr_or_insert_if_absent(Keytype the_key);
 #endif
-  
+
+#ifdef randtrack_element_lock
+  Ele *insert_if_absent(Ele *e);
+#endif
 };
 
 template<class Ele, class Keytype> 
@@ -93,6 +96,14 @@ void
 hash<Ele,Keytype>::insert(Ele *e){
   entries[HASH_INDEX(e->key(),my_size_mask)].push(e);
 }
+
+#ifdef randtrack_element_lock
+template<class Ele, class Keytype> 
+Ele * 
+hash<Ele,Keytype>::insert_if_absent(Ele *e){
+  return entries[HASH_INDEX(e->key(),my_size_mask)].push_if_absent(e);
+}
+#endif
 
 #ifdef randtrack_list_lock
 
