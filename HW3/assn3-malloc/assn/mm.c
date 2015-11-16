@@ -24,7 +24,7 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "Kumo",
+    "Midnight Mafia",
     /* First member's full name */
     "Rushab Ramesh Kumar",
     /* First member's email address */
