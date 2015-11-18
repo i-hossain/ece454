@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include "list.h"
 
 #define HASH_INDEX(_addr,_size_mask) (((_addr) >> 2) & (_size_mask))
@@ -25,6 +26,9 @@ template<class Ele, class Keytype> class hash {
   void print(FILE *f=stdout);
   void reset();
   void cleanup();
+#ifdef randtrack_reduction
+  void merge(hash<Ele,Keytype> *h);
+#endif
 
 #ifdef randtrack_list_lock
   list<Ele,Keytype> *get_list(Keytype the_key, unsigned the_idx);
@@ -131,6 +135,20 @@ hash<Ele,Keytype>::get_list(Keytype the_key, unsigned the_idx){
 //   l->unlock();
 // }
 
+#endif
+
+#ifdef randtrack_reduction
+template<class Ele, class Keytype> 
+void 
+hash<Ele,Keytype>::merge(hash<Ele,Keytype> *h){
+  unsigned i;
+
+  for (i=0;i<my_size;i++){
+    list<Ele,Keytype> *l= h->get_list(i);
+    if (l)
+      entries[i].merge(l);
+  }
+}
 #endif
 
 #endif

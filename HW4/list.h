@@ -44,6 +44,10 @@ template<class Ele, class Keytype> class list {
 #ifdef randtrack_element_lock
   Ele *push_if_absent(Ele *e);
 #endif
+
+#ifdef randtrack_reduction
+  void merge(list<Ele,Keytype> *l);
+#endif
 };
 
 template<class Ele, class Keytype> 
@@ -134,5 +138,24 @@ list<Ele,Keytype>::cleanup(){
   my_head = NULL;
   my_num_ele = 0;
 }
+
+#ifdef randtrack_reduction
+template<class Ele, class Keytype> 
+void
+list<Ele,Keytype>::merge(list<Ele,Keytype> *l){
+  Ele *e_tmp = my_head;
+  Ele *n;
+
+  while (e_tmp){
+    if ((n = l->lookup(e_tmp->key()))) {
+      n->count += e_tmp->count;
+    }
+    else {
+      l->push(e_tmp);
+    }
+    e_tmp = e_tmp->next;
+  }
+}
+#endif
 
 #endif
