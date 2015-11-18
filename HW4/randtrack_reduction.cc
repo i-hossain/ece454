@@ -12,7 +12,7 @@
 #define RAND_NUM_UPPER_BOUND   100000
 #define NUM_SEED_STREAMS            4
 
-// #define DEBUG_BUILD
+#define DEBUG_BUILD
 
 /* 
  * ECE454 Students: 
@@ -173,6 +173,7 @@ main (int argc, char* argv[]){
 
   for (i = 0; i < num_threads; i++){
     new_data[i].h.merge(&big_h);
+    //new_data[i].h.print();
   }
   // print a list of the frequency of all samples
   big_h.print();

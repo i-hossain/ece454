@@ -144,9 +144,9 @@ hash<Ele,Keytype>::merge(hash<Ele,Keytype> *h){
   unsigned i;
 
   for (i=0;i<my_size;i++){
-    list<Ele,Keytype> *l= h->get_list(i);
-    if (l)
-      entries[i].merge(l);
+    //list<Ele,Keytype> *l= h->get_list(i);
+    //if (l)
+    entries[i].merge(h->get_list(i));
   }
 }
 #endif

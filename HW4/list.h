@@ -144,16 +144,20 @@ template<class Ele, class Keytype>
 void
 list<Ele,Keytype>::merge(list<Ele,Keytype> *l){
   Ele *e_tmp = my_head;
+  Ele *e_next;
   Ele *n;
 
   while (e_tmp){
+    e_next = e_tmp->next;
+
     if ((n = l->lookup(e_tmp->key()))) {
       n->count += e_tmp->count;
     }
     else {
       l->push(e_tmp);
     }
-    e_tmp = e_tmp->next;
+
+    e_tmp = e_next;
   }
 }
 #endif
